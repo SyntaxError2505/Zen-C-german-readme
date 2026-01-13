@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void emit_match_logic(const char *pattern, FILE *out, int *label_counter);
+static void emit_match_logic(const char *pattern, FILE *out);
 
 void regex_transpile(const char *input_body, const ZApi *api)
 {
@@ -47,7 +47,7 @@ void regex_transpile(const char *input_body, const ZApi *api)
     free(pattern);
 }
 
-static void emit_match_logic(const char *pattern, FILE *out, int * /*label_counter*/)
+static void emit_match_logic(const char *pattern, FILE *out)
 {
     const char *c = pattern;
 
