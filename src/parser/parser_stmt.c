@@ -335,6 +335,14 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
             zpanic_at(lexer_peek(l), "Expected =>");
         }
 
+        // Create scope for the case to hold the binding
+        enter_scope(ctx);
+        if (binding)
+        {
+            // If ref binding, mark as pointer type so auto-deref (->) works
+            add_symbol(ctx, binding, is_ref ? "void*" : "unknown", NULL);
+        }
+
         ASTNode *body;
         Token pk = lexer_peek(l);
         if (pk.type == TOK_LBRACE)
@@ -354,6 +362,8 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
         {
             body = parse_expression(ctx, l);
         }
+
+        exit_scope(ctx);
 
         ASTNode *c = ast_create(NODE_MATCH_CASE);
         c->match_case.pattern = pattern;

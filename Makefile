@@ -25,6 +25,7 @@ SRCS = src/main.c \
        src/lsp/lsp_main.c \
        src/lsp/lsp_analysis.c \
        src/lsp/lsp_index.c \
+       src/lsp/lsp_project.c \
        src/zen/zen_facts.c \
        src/repl/repl.c \
        src/plugins/plugin_manager.c

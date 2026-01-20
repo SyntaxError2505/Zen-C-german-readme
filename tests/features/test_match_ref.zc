@@ -15,3 +15,28 @@ test "match_ref_int" {
         MyOption::None => assert(false, "fail")
     }
 }
+// Mover struct to test move semantics vs ref
+struct Mover {
+    val: int;
+}
+
+test "match_ref_mover" {
+    var m = Mover { val: 100 };
+    // MyOption<Mover> instantiation
+    var opt = MyOption<Mover>::Some(m);
+    
+    match opt {
+        MyOption::Some(ref x) => {
+            // x should be Mover*
+            assert(x.val == 100, "Mover ref access failed");
+            x.val = 200;
+        },
+        MyOption::None => assert(false, "Should be Some")
+    }
+    
+    // Check if modification persisted
+    match opt {
+        MyOption::Some(v) => assert(v.val == 200, "Mutation via ref failed"),
+        MyOption::None => {}
+    }
+}

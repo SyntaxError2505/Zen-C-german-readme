@@ -148,6 +148,12 @@ void lsp_walk_node(LSPIndex *idx, ASTNode *node)
 
         lsp_walk_node(idx, node->var_decl.init_expr);
     }
+    else if (node->type == NODE_STRUCT)
+    {
+        char hover[256];
+        sprintf(hover, "struct %s", node->strct.name);
+        lsp_index_add_def(idx, node->token, hover, node);
+    }
 
     // Reference logic.
     if (node->definition_token.line > 0 && node->definition_token.line != node->token.line)

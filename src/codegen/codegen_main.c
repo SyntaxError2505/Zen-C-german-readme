@@ -14,33 +14,101 @@ static int struct_depends_on(ASTNode *s1, const char *target_name)
         return 0;
     }
 
-    // Only structs have dependencies that matter for ordering.
-    if (s1->type != NODE_STRUCT)
+    // Check structs
+    if (s1->type == NODE_STRUCT)
     {
-        return 0;
-    }
-
-    ASTNode *field = s1->strct.fields;
-    while (field)
-    {
-        if (field->type == NODE_FIELD && field->field.type)
+        ASTNode *field = s1->strct.fields;
+        while (field)
         {
-            char *type_str = field->field.type;
-            // Skip pointers - they don't create ordering dependency.
-            if (strchr(type_str, '*'))
+            if (field->type == NODE_FIELD && field->field.type)
             {
-                field = field->next;
-                continue;
-            }
+                char *type_str = field->field.type;
 
-            // Check if this field's type matches target (struct or enum).
-            if (strcmp(type_str, target_name) == 0)
-            {
-                return 1;
+                // Skip pointers - they don't create ordering dependency.
+                if (strchr(type_str, '*'))
+                {
+                    field = field->next;
+                    continue;
+                }
+
+                // Clean type string (remove struct/enum prefixes)
+                const char *clean = type_str;
+                if (strncmp(clean, "struct ", 7) == 0)
+                {
+                    clean += 7;
+                }
+                else if (strncmp(clean, "enum ", 5) == 0)
+                {
+                    clean += 5;
+                }
+                else if (strncmp(clean, "union ", 6) == 0)
+                {
+                    clean += 6;
+                }
+
+                // Check for match
+                size_t len = strlen(target_name);
+                if (strncmp(clean, target_name, len) == 0)
+                {
+                    char next = clean[len];
+                    if (next == 0 || next == '[' || isspace(next))
+                    {
+                        return 1;
+                    }
+                }
             }
+            field = field->next;
         }
-        field = field->next;
     }
+    // Check enums (ADTs)
+    else if (s1->type == NODE_ENUM)
+    {
+        ASTNode *variant = s1->enm.variants;
+        while (variant)
+        {
+            if (variant->type == NODE_ENUM_VARIANT && variant->variant.payload)
+            {
+                char *type_str = type_to_string(variant->variant.payload);
+                if (type_str)
+                {
+                    if (strchr(type_str, '*'))
+                    {
+                        free(type_str);
+                        variant = variant->next;
+                        continue;
+                    }
+
+                    const char *clean = type_str;
+                    if (strncmp(clean, "struct ", 7) == 0)
+                    {
+                        clean += 7;
+                    }
+                    else if (strncmp(clean, "enum ", 5) == 0)
+                    {
+                        clean += 5;
+                    }
+                    else if (strncmp(clean, "union ", 6) == 0)
+                    {
+                        clean += 6;
+                    }
+
+                    size_t len = strlen(target_name);
+                    if (strncmp(clean, target_name, len) == 0)
+                    {
+                        char next = clean[len];
+                        if (next == 0 || next == '[' || isspace(next))
+                        {
+                            free(type_str);
+                            return 1;
+                        }
+                    }
+                    free(type_str);
+                }
+            }
+            variant = variant->next;
+        }
+    }
+
     return 0;
 }
 
@@ -102,8 +170,8 @@ static ASTNode *topo_sort_structs(ASTNode *head)
                 continue;
             }
 
-            // Enums and traits have no dependencies, emit first.
-            if (nodes[i]->type == NODE_ENUM || nodes[i]->type == NODE_TRAIT)
+            // Traits have no dependencies, emit first.
+            if (nodes[i]->type == NODE_TRAIT)
             {
                 order[order_idx++] = i;
                 emitted[i] = 1;
@@ -111,7 +179,7 @@ static ASTNode *topo_sort_structs(ASTNode *head)
                 continue;
             }
 
-            // For structs, check if all dependencies are emitted.
+            // For structs/enums, check if all dependencies are emitted.
             int can_emit = 1;
             for (int j = 0; j < count; j++)
             {
