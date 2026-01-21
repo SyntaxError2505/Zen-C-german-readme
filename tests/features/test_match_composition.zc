@@ -1,0 +1,112 @@
+
+struct Inner {
+    value: int;
+}
+
+// Named composition (struct has nested field)
+struct NamedWrapper {
+    use inner: Inner;
+}
+
+// Mixin composition (fields are flattened)
+struct MixinWrapper {
+    use Inner;
+}
+
+enum NamedResult {
+    Ok(NamedWrapper),
+    Err(int)
+}
+
+enum MixinResult {
+    Ok(MixinWrapper),
+    Err(int)
+}
+
+// Test match binding with named composition - field access
+test "match_binding_named_composition" {
+    var inner = Inner { value: 42 };
+    var wrapper = NamedWrapper { inner: inner };
+    var result = NamedResult::Ok(wrapper);
+    
+    match result {
+        NamedResult::Ok(w) => {
+            var val = w.inner.value;
+            assert(val == 42, "Named composition field access failed");
+        },
+        NamedResult::Err(e) => assert(false, "Should not be Err")
+    }
+}
+
+// Test match binding with mixin composition - field access
+test "match_binding_mixin_composition" {
+    var wrapper = MixinWrapper { value: 77 };
+    var result = MixinResult::Ok(wrapper);
+    
+    match result {
+        MixinResult::Ok(w) => {
+            var val = w.value;
+            assert(val == 77, "Mixin composition field access failed");
+        },
+        MixinResult::Err(e) => assert(false, "Should not be Err")
+    }
+}
+
+// Test match binding with mixin - f-string interpolation
+test "match_binding_mixin_fstring" {
+    var wrapper = MixinWrapper { value: 88 };
+    var result = MixinResult::Ok(wrapper);
+    
+    match result {
+        MixinResult::Ok(w) => {
+            println "{w.value}";
+            assert(w.value == 88, "F-string with mixin failed");
+        },
+        MixinResult::Err(e) => assert(false, "Should not be Err")
+    }
+}
+
+// Test match binding with ref - mixin composition
+test "match_binding_ref_mixin" {
+    var wrapper = MixinWrapper { value: 33 };
+    var result = MixinResult::Ok(wrapper);
+    
+    match result {
+        MixinResult::Ok(ref w) => {
+            assert(w.value == 33, "Ref binding with mixin failed");
+            w.value = 44;
+        },
+        MixinResult::Err(e) => assert(false, "Should not be Err")
+    }
+    
+    // Verify modification persisted
+    match result {
+        MixinResult::Ok(w) => {
+            assert(w.value == 44, "Ref modification did not persist");
+        },
+        MixinResult::Err(e) => {}
+    }
+}
+
+// Test match binding with ref - named composition
+test "match_binding_ref_named" {
+    var inner = Inner { value: 55 };
+    var wrapper = NamedWrapper { inner: inner };
+    var result = NamedResult::Ok(wrapper);
+    
+    match result {
+        NamedResult::Ok(ref w) => {
+            assert(w.inner.value == 55, "Ref binding with named composition failed");
+            w.inner.value = 66;
+        },
+        NamedResult::Err(e) => assert(false, "Should not be Err")
+    }
+    
+    // Verify modification persisted
+    match result {
+        NamedResult::Ok(w) => {
+            assert(w.inner.value == 66, "Named composition ref modification did not persist");
+        },
+        NamedResult::Err(e) => {}
+    }
+}

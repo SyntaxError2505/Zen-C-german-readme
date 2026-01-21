@@ -339,8 +339,48 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
         enter_scope(ctx);
         if (binding)
         {
-            // If ref binding, mark as pointer type so auto-deref (->) works
-            add_symbol(ctx, binding, is_ref ? "void*" : "unknown", NULL);
+            // Try to infer binding type from enum variant payload
+            char *binding_type = is_ref ? "void*" : "unknown";
+            Type *binding_type_info = NULL;
+
+            // Look up the enum variant to get its payload type
+            EnumVariantReg *vreg = find_enum_variant(ctx, pattern);
+            if (vreg)
+            {
+                // Find the enum definition
+                ASTNode *enum_def = find_struct_def(ctx, vreg->enum_name);
+                if (enum_def && enum_def->type == NODE_ENUM)
+                {
+                    // Find the specific variant
+                    ASTNode *v = enum_def->enm.variants;
+                    while (v)
+                    {
+                        // Match by variant name (pattern suffix after last _)
+                        char *v_full =
+                            xmalloc(strlen(vreg->enum_name) + strlen(v->variant.name) + 2);
+                        sprintf(v_full, "%s_%s", vreg->enum_name, v->variant.name);
+                        if (strcmp(v_full, pattern) == 0 && v->variant.payload)
+                        {
+                            // Found the variant, extract payload type
+                            binding_type_info = v->variant.payload;
+                            binding_type = type_to_string(v->variant.payload);
+                            if (is_ref)
+                            {
+                                // For ref bindings, make it a pointer to the payload type
+                                char *ptr_type = xmalloc(strlen(binding_type) + 2);
+                                sprintf(ptr_type, "%s*", binding_type);
+                                binding_type = ptr_type;
+                            }
+                            free(v_full);
+                            break;
+                        }
+                        free(v_full);
+                        v = v->next;
+                    }
+                }
+            }
+
+            add_symbol(ctx, binding, binding_type, binding_type_info);
         }
 
         ASTNode *body;
