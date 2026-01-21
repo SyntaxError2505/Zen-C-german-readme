@@ -25,7 +25,7 @@ impl Queue<T> {
     new_queue.len = self.len;
     new_queue.cap = self.cap;
     new_queue.data = malloc(sizeof(T) * new_queue.cap);
-    memcpy(new_queue.data, self.data, sizeof(T) * new_queue.cap);
+    memcpy(new_queue.data, self.data, sizeof(T) * new_queue.len);
     return new_queue;
   }
 
