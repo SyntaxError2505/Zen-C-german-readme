@@ -1384,6 +1384,21 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                         char *tmp = xmalloc(strlen(acc) + suffix.len + 3);
 
                         ASTNode *def = find_struct_def(ctx, acc);
+
+                        // If not found as a struct, check if it's an alias
+                        if (!def)
+                        {
+                            const char *aliased = find_type_alias(ctx, acc);
+                            if (aliased)
+                            {
+                                // Found an alias: replace acc with the aliased name
+                                free(acc);
+                                acc = xstrdup(aliased);
+                                // Try finding the struct definition again with the resolved name
+                                def = find_struct_def(ctx, acc);
+                            }
+                        }
+
                         if (def)
                         {
                             int is_variant = 0;

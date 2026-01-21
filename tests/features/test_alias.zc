@@ -30,6 +30,9 @@ impl Vec2<T> {
   fn add(self, rhs: Vec2<T>) -> Vec2<T> {
     return Vec2<T>{x: self.x + rhs.x, y: self.y + rhs.y};
   }
+  static fn zero() -> Vec2<T> {
+    return Vec2<T>{x: 0, y: 0};
+  }
 }
 
 alias Vec2f = Vec2<f32>;
@@ -92,3 +95,13 @@ test "alias operator overloading" {
   assert(v2.x == -2.0, "Control generic operator overloading failed");
 }
 
+
+test "alias static methods" {
+    var v1 = Vec2f::zero();
+    assert(v1.x == 0.0, "Direct static call on alias failed");
+
+    println "Static call in f-string: {Vec2f::zero().x}";
+
+    var v2 = Vec2<f32>::zero();
+    assert(v2.x == 0.0, "Direct static call on generic failed");
+}

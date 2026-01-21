@@ -370,6 +370,10 @@ void register_selective_import(ParserContext *ctx, const char *symbol, const cha
                                const char *source_module);
 SelectiveImport *find_selective_import(ParserContext *ctx, const char *name);
 
+// Type Aliases
+void register_type_alias(ParserContext *ctx, const char *alias, const char *original);
+const char *find_type_alias(ParserContext *ctx, const char *alias);
+
 // External symbol tracking (C interop)
 void register_extern_symbol(ParserContext *ctx, const char *name);
 int is_extern_symbol(ParserContext *ctx, const char *name);

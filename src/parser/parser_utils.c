@@ -2666,8 +2666,10 @@ char *rewrite_expr_methods(ParserContext *ctx, char *raw)
 
                     char mangled[256];
 
-                    // Resolve alias
-                    Module *mod = find_module(ctx, func_name);
+                    const char *aliased = find_type_alias(ctx, func_name);
+                    const char *use_name = aliased ? aliased : func_name;
+
+                    Module *mod = find_module(ctx, use_name);
                     if (mod)
                     {
                         if (mod->is_c_header)
@@ -2681,14 +2683,14 @@ char *rewrite_expr_methods(ParserContext *ctx, char *raw)
                     }
                     else
                     {
-                        ASTNode *sdef = find_struct_def(ctx, func_name);
+                        ASTNode *sdef = find_struct_def(ctx, use_name);
                         if (sdef)
                         {
-                            snprintf(mangled, sizeof(mangled), "%s__%s", func_name, method);
+                            snprintf(mangled, sizeof(mangled), "%s__%s", use_name, method);
                         }
                         else
                         {
-                            snprintf(mangled, sizeof(mangled), "%s_%s", func_name, method);
+                            snprintf(mangled, sizeof(mangled), "%s_%s", use_name, method);
                         }
                     }
 
