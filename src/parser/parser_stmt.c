@@ -133,32 +133,48 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
 
         char *pattern = xstrdup(patterns_buf);
         int is_default = (strcmp(pattern, "_") == 0);
-
-        char *binding = NULL;
         int is_destructure = 0;
 
-        int is_ref = 0;
+        // Handle Destructuring: Ok(v) or Rect(w, h)
+        char **bindings = NULL;
+        int *binding_refs = NULL;
+        int binding_count = 0;
 
-        // Handle Destructuring: Ok(v)
-        // (Only allowed if we matched a single pattern, e.g. "Result::Ok(val)")
         if (!is_default && pattern_count == 1 && lexer_peek(l).type == TOK_LPAREN)
         {
             lexer_next(l); // eat (
 
-            // Check for 'ref' keyword
-            if (lexer_peek(l).type == TOK_IDENT && lexer_peek(l).len == 3 &&
-                strncmp(lexer_peek(l).start, "ref", 3) == 0)
+            bindings = xmalloc(sizeof(char *) * 8); // hardcap at 8 for now or realloc
+            binding_refs = xmalloc(sizeof(int) * 8);
+
+            while (1)
             {
-                lexer_next(l); // eat 'ref'
-                is_ref = 1;
+                int is_r = 0;
+                // Check for 'ref' keyword
+                if (lexer_peek(l).type == TOK_IDENT && lexer_peek(l).len == 3 &&
+                    strncmp(lexer_peek(l).start, "ref", 3) == 0)
+                {
+                    lexer_next(l); // eat 'ref'
+                    is_r = 1;
+                }
+
+                Token b = lexer_next(l);
+                if (b.type != TOK_IDENT)
+                {
+                    zpanic_at(b, "Expected variable name in pattern");
+                }
+                bindings[binding_count] = token_strdup(b);
+                binding_refs[binding_count] = is_r;
+                binding_count++;
+
+                if (lexer_peek(l).type == TOK_COMMA)
+                {
+                    lexer_next(l);
+                    continue;
+                }
+                break;
             }
 
-            Token b = lexer_next(l);
-            if (b.type != TOK_IDENT)
-            {
-                zpanic_at(b, "Expected variable name in pattern");
-            }
-            binding = token_strdup(b);
             if (lexer_next(l).type != TOK_RPAREN)
             {
                 zpanic_at(lexer_peek(l), "Expected )");
@@ -166,7 +182,7 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
             is_destructure = 1;
         }
 
-        // --- 3. Parse Guard (if condition) ---
+        // Parse Guard (if condition)
         ASTNode *guard = NULL;
         if (lexer_peek(l).type == TOK_IDENT && strncmp(lexer_peek(l).start, "if", 2) == 0)
         {
@@ -182,18 +198,21 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
 
         // Create scope for the case to hold the binding
         enter_scope(ctx);
-        if (binding)
+        if (binding_count > 0)
         {
             // Try to infer binding type from enum variant payload
-            char *binding_type = is_ref ? "void*" : "unknown";
-            Type *binding_type_info = NULL;
-
             // Look up the enum variant to get its payload type
             EnumVariantReg *vreg = find_enum_variant(ctx, pattern);
+
+            ASTNode *payload_node_field = NULL;
+            int is_tuple_payload = 0;
+            Type *payload_type = NULL;
+            ASTNode *enum_def = NULL;
+
             if (vreg)
             {
                 // Find the enum definition
-                ASTNode *enum_def = find_struct_def(ctx, vreg->enum_name);
+                enum_def = find_struct_def(ctx, vreg->enum_name);
                 if (enum_def && enum_def->type == NODE_ENUM)
                 {
                     // Find the specific variant
@@ -207,25 +226,107 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
                         if (strcmp(v_full, pattern) == 0 && v->variant.payload)
                         {
                             // Found the variant, extract payload type
-                            binding_type_info = v->variant.payload;
-                            binding_type = type_to_string(v->variant.payload);
-                            if (is_ref)
+                            payload_type = v->variant.payload;
+                            if (payload_type && payload_type->kind == TYPE_STRUCT &&
+                                strncmp(payload_type->name, "Tuple_", 6) == 0)
                             {
-                                // For ref bindings, make it a pointer to the payload type
-                                char *ptr_type = xmalloc(strlen(binding_type) + 2);
-                                sprintf(ptr_type, "%s*", binding_type);
-                                binding_type = ptr_type;
+                                is_tuple_payload = 1;
+                                ASTNode *tuple_def = find_struct_def(ctx, payload_type->name);
+                                if (tuple_def)
+                                {
+                                    payload_node_field = tuple_def->strct.fields;
+                                }
                             }
                             free(v_full);
                             break;
                         }
-                        free(v_full);
                         v = v->next;
                     }
                 }
             }
 
-            add_symbol(ctx, binding, binding_type, binding_type_info);
+            for (int i = 0; i < binding_count; i++)
+            {
+                char *binding = bindings[i];
+                int is_ref = binding_refs[i];
+                char *binding_type = is_ref ? "void*" : "unknown";
+                Type *binding_type_info = NULL; // Default unknown
+
+                if (payload_type)
+                {
+                    if (binding_count == 1 && !is_tuple_payload)
+                    {
+                        binding_type = type_to_string(payload_type);
+                        binding_type_info = payload_type;
+                    }
+                    else if (binding_count == 1 && is_tuple_payload)
+                    {
+                        binding_type = type_to_string(payload_type);
+                        binding_type_info = payload_type;
+                    }
+                    else if (binding_count > 1 && is_tuple_payload)
+                    {
+                        if (payload_node_field)
+                        {
+                            Lexer tmp;
+                            lexer_init(&tmp, payload_node_field->field.type);
+                            binding_type_info = parse_type_formal(ctx, &tmp);
+                            binding_type = type_to_string(binding_type_info);
+                            payload_node_field = payload_node_field->next;
+                        }
+                    }
+                }
+
+                if (is_ref && binding_type_info)
+                {
+                    Type *ptr = type_new(TYPE_POINTER);
+                    ptr->inner = binding_type_info;
+                    binding_type_info = ptr;
+
+                    char *ptr_s = xmalloc(strlen(binding_type) + 2);
+                    sprintf(ptr_s, "%s*", binding_type);
+                    binding_type = ptr_s;
+                }
+
+                int is_generic_unresolved = 0;
+
+                if (enum_def)
+                {
+                    if (enum_def->enm.generic_param)
+                    {
+                        char *param = enum_def->enm.generic_param;
+                        if (strstr(binding_type, param))
+                        {
+                            is_generic_unresolved = 1;
+                        }
+                    }
+                }
+
+                if (!is_generic_unresolved &&
+                    (strcmp(binding_type, "T") == 0 || strcmp(binding_type, "T*") == 0))
+                {
+                    is_generic_unresolved = 1;
+                }
+
+                if (is_generic_unresolved)
+                {
+                    if (is_ref)
+                    {
+                        binding_type = "unknown*";
+                        Type *u = type_new(TYPE_UNKNOWN);
+                        Type *p = type_new(TYPE_POINTER);
+                        p->inner = u;
+                        binding_type_info = p;
+                    }
+                    else
+                    {
+                        binding_type = "unknown";
+                        binding_type_info = type_new(TYPE_UNKNOWN);
+                    }
+                }
+
+                add_symbol(ctx, binding, binding_type, binding_type_info);
+            }
         }
 
         ASTNode *body;
@@ -250,11 +351,26 @@ ASTNode *parse_match(ParserContext *ctx, Lexer *l)
 
         exit_scope(ctx);
 
+        int any_ref = 0;
+        if (binding_refs)
+        {
+            for (int i = 0; i < binding_count; i++)
+            {
+                if (binding_refs[i])
+                {
+                    any_ref = 1;
+                    break;
+                }
+            }
+        }
+
         ASTNode *c = ast_create(NODE_MATCH_CASE);
         c->match_case.pattern = pattern;
-        c->match_case.binding_name = binding;
+        c->match_case.binding_names = bindings;
+        c->match_case.binding_count = binding_count;
+        c->match_case.binding_refs = binding_refs;
         c->match_case.is_destructuring = is_destructure;
-        c->match_case.is_ref = is_ref; // Store is_ref flag
+        c->match_case.is_ref = any_ref;
         c->match_case.guard = guard;
         c->match_case.body = body;
         c->match_case.is_default = is_default;

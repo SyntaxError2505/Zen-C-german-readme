@@ -605,11 +605,17 @@ static void find_declared_vars(ASTNode *node, char ***decls, int *count)
         (*count)++;
     }
 
-    if (node->type == NODE_MATCH_CASE && node->match_case.binding_name)
+    if (node->type == NODE_MATCH_CASE)
     {
-        *decls = xrealloc(*decls, sizeof(char *) * (*count + 1));
-        (*decls)[*count] = xstrdup(node->match_case.binding_name);
-        (*count)++;
+        if (node->match_case.binding_names)
+        {
+            for (int i = 0; i < node->match_case.binding_count; i++)
+            {
+                *decls = xrealloc(*decls, sizeof(char *) * (*count + 1));
+                (*decls)[*count] = xstrdup(node->match_case.binding_names[i]);
+                (*count)++;
+            }
+        }
     }
 
     switch (node->type)
@@ -1310,18 +1316,47 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
             char *pattern = token_strdup(p);
             int is_default = (strcmp(pattern, "_") == 0);
 
-            char *binding = NULL;
-            int is_destructure = 0;
-            skip_comments(l);
+            // Handle Destructuring: Ok(v) or Rect(w, h)
+            char **bindings = NULL;
+            int *binding_refs = NULL;
+            int binding_count = 0;
+            int is_destructure = 0; // Initialize here
+
+            // Assuming pattern_count is 1 for now, or needs to be determined
+            // For single identifier patterns, pattern_count would be 1.
+            // This logic needs to be adjusted if `pattern_count` is not available or needs to be
+            // calculated. For now, assuming `pattern_count == 1` is implicitly true for single
+            // token patterns.
             if (!is_default && lexer_peek(l).type == TOK_LPAREN)
             {
-                lexer_next(l);
-                Token b = lexer_next(l);
-                if (b.type != TOK_IDENT)
+                lexer_next(l);                           // eat (
+                bindings = xmalloc(sizeof(char *) * 8);  // Initial capacity
+                binding_refs = xmalloc(sizeof(int) * 8); // unused but consistent
+
+                while (1)
                 {
-                    zpanic_at(b, "Expected binding name");
+                    int is_r = 0;
+                    if (lexer_peek(l).type == TOK_IDENT && lexer_peek(l).len == 3 &&
+                        strncmp(lexer_peek(l).start, "ref", 3) == 0)
+                    {
+                        lexer_next(l); // eat ref
+                        is_r = 1;
+                    }
+                    Token b = lexer_next(l);
+                    if (b.type != TOK_IDENT)
+                    {
+                        zpanic_at(b, "Expected binding");
+                    }
+                    bindings[binding_count] = token_strdup(b);
+                    binding_refs[binding_count] = is_r;
+                    binding_count++;
+                    if (lexer_peek(l).type == TOK_COMMA)
+                    {
+                        lexer_next(l);
+                        continue;
+                    }
+                    break;
                 }
-                binding = token_strdup(b);
                 if (lexer_next(l).type != TOK_RPAREN)
                 {
                     zpanic_at(lexer_peek(l), "Expected )");
@@ -1341,6 +1376,17 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
             if (lexer_next(l).type != TOK_ARROW)
             {
                 zpanic_at(lexer_peek(l), "Expected '=>'");
+            }
+
+            // Create scope for the case to hold the binding
+            enter_scope(ctx);
+            if (binding_count > 0)
+            {
+                for (int i = 0; i < binding_count; i++)
+                {
+                    add_symbol(ctx, bindings[i], NULL,
+                               NULL); // Let inference handle it or default to void*?
+                }
             }
 
             ASTNode *body;
@@ -1364,10 +1410,28 @@ ASTNode *parse_primary(ParserContext *ctx, Lexer *l)
                 body = parse_expression(ctx, l);
             }
 
+            exit_scope(ctx);
+
+            int any_ref = 0;
+            if (binding_refs)
+            {
+                for (int i = 0; i < binding_count; i++)
+                {
+                    if (binding_refs[i])
+                    {
+                        any_ref = 1;
+                        break;
+                    }
+                }
+            }
+
             ASTNode *c = ast_create(NODE_MATCH_CASE);
             c->match_case.pattern = pattern;
-            c->match_case.binding_name = binding;
+            c->match_case.binding_names = bindings;      // New multi-binding field
+            c->match_case.binding_count = binding_count; // New binding count field
+            c->match_case.binding_refs = binding_refs;
             c->match_case.is_destructuring = is_destructure;
+            c->match_case.is_ref = any_ref;
             c->match_case.guard = guard;
             c->match_case.body = body;
             c->match_case.is_default = is_default;
@@ -4817,6 +4881,8 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
             bin->binary.op = token_strdup(op);
         }
 
+        fprintf(stderr, "DEBUG: Binary Loop Op: %s\n", bin->binary.op);
+
         if (strcmp(bin->binary.op, "/") == 0 || strcmp(bin->binary.op, "%") == 0)
         {
             if (rhs->type == NODE_EXPR_LITERAL && rhs->literal.type_kind == LITERAL_INT &&
@@ -5216,9 +5282,68 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
             }
         }
 
+        fprintf(stderr, "DEBUG: Past Method Check Op=%s\n", bin->binary.op);
+
         // Standard Type Checking (if no overload found)
         if (lhs->type_info && rhs->type_info)
         {
+            // Ensure type_info is set for variables (critical for inference)
+            if (lhs->type == NODE_EXPR_VAR && !lhs->type_info)
+            {
+                Symbol *s = find_symbol_entry(ctx, lhs->var_ref.name);
+                if (s)
+                {
+                    lhs->type_info = s->type_info;
+                }
+            }
+            if (rhs->type == NODE_EXPR_VAR && !rhs->type_info)
+            {
+                Symbol *s = find_symbol_entry(ctx, rhs->var_ref.name);
+                if (s)
+                {
+                    rhs->type_info = s->type_info;
+                }
+            }
+
+            // Backward Inference for Lambda Params
+            // LHS is Unknown Var, RHS is Known
+            if (lhs->type == NODE_EXPR_VAR && lhs->type_info &&
+                lhs->type_info->kind == TYPE_UNKNOWN && rhs->type_info &&
+                rhs->type_info->kind != TYPE_UNKNOWN)
+            {
+                // Infer LHS type from RHS
+                Symbol *sym = find_symbol_entry(ctx, lhs->var_ref.name);
+                if (sym)
+                {
+                    // Update Symbol
+                    sym->type_info = rhs->type_info;
+                    sym->type_name = type_to_string(rhs->type_info);
+
+                    // Update AST Node
+                    lhs->type_info = rhs->type_info;
+                    lhs->resolved_type = xstrdup(sym->type_name);
+                }
+            }
+
+            // RHS is Unknown Var, LHS is Known
+            if (rhs->type == NODE_EXPR_VAR && rhs->type_info &&
+                rhs->type_info->kind == TYPE_UNKNOWN && lhs->type_info &&
+                lhs->type_info->kind != TYPE_UNKNOWN)
+            {
+                // Infer RHS type from LHS
+                Symbol *sym = find_symbol_entry(ctx, rhs->var_ref.name);
+                if (sym)
+                {
+                    // Update Symbol
+                    sym->type_info = lhs->type_info;
+                    sym->type_name = type_to_string(lhs->type_info);
+
+                    // Update AST Node
+                    rhs->type_info = lhs->type_info;
+                    rhs->resolved_type = xstrdup(sym->type_name);
+                }
+            }
+
             if (is_comparison_op(bin->binary.op))
             {
                 bin->type_info = type_new(TYPE_INT); // bool
@@ -5250,52 +5375,6 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                 if (!skip_check && !type_eq(lhs->type_info, rhs->type_info) &&
                     !(is_integer_type(lhs->type_info) && is_integer_type(rhs->type_info)))
                 {
-                    // Backward Inference for Lambda Params
-                    // LHS is Unknown Var, RHS is Known
-                    if (lhs->type == NODE_EXPR_VAR && lhs->type_info &&
-                        lhs->type_info->kind == TYPE_UNKNOWN && rhs->type_info &&
-                        rhs->type_info->kind != TYPE_UNKNOWN)
-                    {
-                        // Infer LHS type from RHS
-                        Symbol *sym = find_symbol_entry(ctx, lhs->var_ref.name);
-                        if (sym)
-                        {
-                            // Update Symbol
-                            sym->type_info = rhs->type_info;
-                            sym->type_name = type_to_string(rhs->type_info);
-
-                            // Update AST Node
-                            lhs->type_info = rhs->type_info;
-                            lhs->resolved_type = xstrdup(sym->type_name);
-
-                            // Re-check validity (optional, but good)
-                            bin->type_info = rhs->type_info;
-                            goto inference_success;
-                        }
-                    }
-
-                    // RHS is Unknown Var, LHS is Known
-                    if (rhs->type == NODE_EXPR_VAR && rhs->type_info &&
-                        rhs->type_info->kind == TYPE_UNKNOWN && lhs->type_info &&
-                        lhs->type_info->kind != TYPE_UNKNOWN)
-                    {
-                        // Infer RHS type from LHS
-                        Symbol *sym = find_symbol_entry(ctx, rhs->var_ref.name);
-                        if (sym)
-                        {
-                            // Update Symbol
-                            sym->type_info = lhs->type_info;
-                            sym->type_name = type_to_string(lhs->type_info);
-
-                            // Update AST Node
-                            rhs->type_info = lhs->type_info;
-                            rhs->resolved_type = xstrdup(sym->type_name);
-
-                            bin->type_info = lhs->type_info;
-                            goto inference_success;
-                        }
-                    }
-
                     char msg[256];
                     sprintf(msg, "Type mismatch in comparison: cannot compare '%s' and '%s'", t1,
                             t2);
@@ -5304,8 +5383,6 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                     sprintf(suggestion, "Both operands must have compatible types for comparison");
 
                     zpanic_with_suggestion(op, msg, suggestion);
-
-                inference_success:;
                 }
             }
             else
@@ -5457,11 +5534,11 @@ ASTNode *parse_arrow_lambda_single(ParserContext *ctx, Lexer *l, char *param_nam
 
     // Default param type: unknown (to be inferred)
     lambda->lambda.param_types = xmalloc(sizeof(char *));
-    lambda->lambda.param_types[0] = xstrdup("unknown");
+    lambda->lambda.param_types[0] = NULL;
 
     // Create Type Info: unknown -> unknown
     Type *t = type_new(TYPE_FUNCTION);
-    t->inner = type_new(TYPE_UNKNOWN); // Return
+    t->inner = type_new(TYPE_INT); // Return (default to int)
     t->args = xmalloc(sizeof(Type *));
     t->args[0] = type_new(TYPE_UNKNOWN); // Arg
     t->arg_count = 1;
@@ -5469,7 +5546,7 @@ ASTNode *parse_arrow_lambda_single(ParserContext *ctx, Lexer *l, char *param_nam
 
     // Register parameter in scope for body parsing
     enter_scope(ctx);
-    add_symbol(ctx, param_name, "unknown", t->args[0]);
+    add_symbol(ctx, param_name, NULL, t->args[0]);
 
     // Body parsing...
     ASTNode *body_block = NULL;
@@ -5495,12 +5572,24 @@ ASTNode *parse_arrow_lambda_single(ParserContext *ctx, Lexer *l, char *param_nam
         ASTNode *ret_val = lambda->lambda.body->block.statements->ret.value;
         if (ret_val->type_info && ret_val->type_info->kind != TYPE_UNKNOWN)
         {
+            if (param_name[0] == 'x')
+            {
+                fprintf(stderr, "DEBUG: Updating return type to %d\n", ret_val->type_info->kind);
+            }
             // Update return type
             if (t->inner)
             {
                 free(t->inner);
             }
             t->inner = ret_val->type_info;
+        }
+        else
+        {
+            if (param_name[0] == 'x')
+            {
+                fprintf(stderr, "DEBUG: Return type unknown/null! ret=%p kind=%d\n",
+                        ret_val->type_info, ret_val->type_info ? ret_val->type_info->kind : -1);
+            }
         }
     }
 
@@ -5514,9 +5603,19 @@ ASTNode *parse_arrow_lambda_single(ParserContext *ctx, Lexer *l, char *param_nam
     }
     else
     {
+        if (param_name[0] == 'x')
+        {
+            fprintf(stderr, "DEBUG: Fallback! sym=%p kind=%d\n", sym,
+                    sym && sym->type_info ? sym->type_info->kind : -1);
+        }
         // Fallback to int if still unknown
-        free(lambda->lambda.param_types[0]);
+        if (lambda->lambda.param_types[0])
+        {
+            free(lambda->lambda.param_types[0]);
+        }
         lambda->lambda.param_types[0] = xstrdup("int");
+        t->args[0] = type_new(TYPE_INT); // FIX: Update AST type info too!
+
         // Update symbol to match fallback
         if (sym)
         {

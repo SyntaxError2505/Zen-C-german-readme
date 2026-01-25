@@ -328,6 +328,61 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                 }
             }
 
+            // Check for Static Enum Variant Call: Enum.Variant(...)
+            if (target->type == NODE_EXPR_VAR)
+            {
+                ASTNode *def = find_struct_def(ctx, target->var_ref.name);
+                if (def && def->type == NODE_ENUM)
+                {
+                    char mangled[256];
+                    sprintf(mangled, "%s_%s", target->var_ref.name, method);
+                    FuncSig *sig = find_func(ctx, mangled);
+                    if (sig)
+                    {
+                        fprintf(out, "%s(", mangled);
+                        ASTNode *arg = node->call.args;
+                        int arg_idx = 0;
+                        while (arg)
+                        {
+                            if (arg_idx > 0 && arg)
+                            {
+                                fprintf(out, ", ");
+                            }
+
+                            Type *param_t =
+                                (arg_idx < sig->total_args) ? sig->arg_types[arg_idx] : NULL;
+
+                            // Tuple Packing Logic
+                            if (param_t && param_t->kind == TYPE_STRUCT &&
+                                strncmp(param_t->name, "Tuple_", 6) == 0 && sig->total_args == 1 &&
+                                node->call.arg_count > 1)
+                            {
+                                fprintf(out, "(%s){", param_t->name);
+                                int first = 1;
+                                while (arg)
+                                {
+                                    if (!first)
+                                    {
+                                        fprintf(out, ", ");
+                                    }
+                                    first = 0;
+                                    codegen_expression(ctx, arg, out);
+                                    arg = arg->next;
+                                }
+                                fprintf(out, "}");
+                                break; // All args consumed
+                            }
+
+                            codegen_expression(ctx, arg, out);
+                            arg = arg->next;
+                            arg_idx++;
+                        }
+                        fprintf(out, ")");
+                        return;
+                    }
+                }
+            }
+
             char *type = infer_type(ctx, target);
             if (type)
             {
@@ -561,18 +616,55 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                         free(inner);
                         handled = 1;
                     }
+                    else if (param_t && param_t->kind == TYPE_STRUCT &&
+                             strncmp(param_t->name, "Tuple_", 6) == 0 && sig->total_args == 1 &&
+                             node->call.arg_count > 1)
+                    {
+                        // Implicit Tuple Packing:
+                        // Function expects 1 Tuple argument, but call has multiple args -> Pack
+                        // them
+                        fprintf(out, "(%s){", param_t->name);
+
+                        ASTNode *curr = arg;
+                        int first_field = 1;
+                        while (curr)
+                        {
+                            if (!first_field)
+                            {
+                                fprintf(out, ", ");
+                            }
+                            first_field = 0;
+                            codegen_expression(ctx, curr, out);
+                            curr = curr->next;
+                        }
+                        fprintf(out, "}");
+                        handled = 1;
+
+                        // Advance main loop iterator to end
+                        arg = NULL;
+                    }
                 }
 
-                if (!handled)
+                if (handled)
+                {
+                    if (arg == NULL)
+                    {
+                        break; // Tuple packed all args
+                    }
+                }
+                else
                 {
                     codegen_expression(ctx, arg, out);
                 }
 
-                if (arg->next)
+                if (arg && arg->next)
                 {
                     fprintf(out, ", ");
                 }
-                arg = arg->next;
+                if (arg)
+                {
+                    arg = arg->next;
+                }
                 arg_idx++;
             }
         }

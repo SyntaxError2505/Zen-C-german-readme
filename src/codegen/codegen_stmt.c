@@ -325,150 +325,123 @@ void codegen_match_internal(ParserContext *ctx, ASTNode *node, FILE *out, int us
             emit_pattern_condition(ctx, c->match_case.pattern, id, has_ref_binding, out);
         }
         fprintf(out, ") { ");
-        if (c->match_case.binding_name)
+        if (c->match_case.binding_count > 0)
         {
-            if (is_option)
+            for (int i = 0; i < c->match_case.binding_count; i++)
             {
-                if (strstr(g_config.cc, "tcc"))
-                {
-                    if (c->match_case.is_ref)
-                    {
-                        fprintf(out, "__typeof__(&_m_%d.val) %s = &_m_%d.val; ", id,
-                                c->match_case.binding_name, id);
-                    }
-                    else
-                    {
-                        fprintf(out, "__typeof__(_m_%d.val) %s = _m_%d.val; ", id,
-                                c->match_case.binding_name, id);
-                    }
-                }
-                else
-                {
-                    if (c->match_case.is_ref)
-                    {
-                        // _m is pointer when has_ref_binding, use ->
-                        fprintf(out, "ZC_AUTO %s = &_m_%d->val; ", c->match_case.binding_name, id);
-                    }
-                    else if (has_ref_binding)
-                    {
-                        // _m is pointer, use -> but don't take address
-                        fprintf(out, "ZC_AUTO %s = _m_%d->val; ", c->match_case.binding_name, id);
-                    }
-                    else
-                    {
-                        // _m is value, use .
-                        fprintf(out, "ZC_AUTO %s = _m_%d.val; ", c->match_case.binding_name, id);
-                    }
-                }
-            }
-            else if (is_result) // FIX: Changed 'if' to 'else if' to match original logic structure
-                                // if needed, but original code had implicit fallthrough checks? No,
-                                // checks match pattern.
-            {
-                if (strcmp(c->match_case.pattern, "Ok") == 0)
+                char *bname = c->match_case.binding_names[i];
+                int is_r = c->match_case.binding_refs ? c->match_case.binding_refs[i] : 0;
+
+                if (is_option)
                 {
                     if (strstr(g_config.cc, "tcc"))
                     {
-                        if (c->match_case.is_ref)
+                        if (is_r)
                         {
-                            fprintf(out, "__typeof__(&_m_%d->val) %s = &_m_%d->val; ", id,
-                                    c->match_case.binding_name, id);
+                            fprintf(out, "__typeof__(&_m_%d.val) %s = &_m_%d.val; ", id, bname, id);
                         }
                         else
                         {
-                            fprintf(out, "__typeof__(_m_%d->val) %s = _m_%d->val; ", id,
-                                    c->match_case.binding_name, id);
+                            fprintf(out, "__typeof__(_m_%d.val) %s = _m_%d.val; ", id, bname, id);
                         }
                     }
                     else
                     {
-                        if (c->match_case.is_ref)
+                        if (is_r)
                         {
-                            // _m is pointer when has_ref_binding, use ->
-                            fprintf(out, "ZC_AUTO %s = &_m_%d->val; ", c->match_case.binding_name,
-                                    id);
+                            fprintf(out, "ZC_AUTO %s = &_m_%d->val; ", bname, id);
                         }
                         else if (has_ref_binding)
                         {
-                            // _m is pointer, use -> but don't take address
-                            fprintf(out, "ZC_AUTO %s = _m_%d->val; ", c->match_case.binding_name,
-                                    id);
+                            fprintf(out, "ZC_AUTO %s = _m_%d->val; ", bname, id);
                         }
                         else
                         {
-                            // _m is value, use .
-                            fprintf(out, "ZC_AUTO %s = _m_%d.val; ", c->match_case.binding_name,
-                                    id);
+                            fprintf(out, "ZC_AUTO %s = _m_%d.val; ", bname, id);
                         }
                     }
                 }
-                else
+                else if (is_result)
                 {
+                    char *field = "val";
+                    if (strcmp(c->match_case.pattern, "Err") == 0)
+                    {
+                        field = "err";
+                    }
+
                     if (strstr(g_config.cc, "tcc"))
                     {
-                        if (c->match_case.is_ref)
+                        if (is_r)
                         {
-                            fprintf(out, "__typeof__(&_m_%d->err) %s = &_m_%d->err; ", id,
-                                    c->match_case.binding_name, id);
+                            fprintf(out, "__typeof__(&_m_%d->%s) %s = &_m_%d->%s; ", id, field,
+                                    bname, id, field);
                         }
                         else
                         {
-                            fprintf(out, "__typeof__(_m_%d->err) %s = _m_%d->err; ", id,
-                                    c->match_case.binding_name, id);
+                            fprintf(out, "__typeof__(_m_%d->%s) %s = _m_%d->%s; ", id, field, bname,
+                                    id, field);
                         }
                     }
                     else
                     {
-                        if (c->match_case.is_ref)
+                        if (is_r)
                         {
-                            // _m is pointer when has_ref_binding, use ->
-                            fprintf(out, "ZC_AUTO %s = &_m_%d->err; ", c->match_case.binding_name,
-                                    id);
+                            fprintf(out, "ZC_AUTO %s = &_m_%d->%s; ", bname, id, field);
                         }
                         else if (has_ref_binding)
                         {
-                            // _m is pointer, use -> but don't take address
-                            fprintf(out, "ZC_AUTO %s = _m_%d->err; ", c->match_case.binding_name,
-                                    id);
+                            fprintf(out, "ZC_AUTO %s = _m_%d->%s; ", bname, id, field);
                         }
                         else
                         {
-                            // _m is value, use .
-                            fprintf(out, "ZC_AUTO %s = _m_%d.err; ", c->match_case.binding_name,
-                                    id);
+                            fprintf(out, "ZC_AUTO %s = _m_%d.%s; ", bname, id, field);
                         }
                     }
                 }
-            }
-            else
-            {
-                char *f = strrchr(c->match_case.pattern, '_');
-                if (f)
-                {
-                    f++;
-                }
                 else
                 {
-                    f = c->match_case.pattern;
-                }
-                // Generic struct destructuring (for example, MyStruct_Variant)
-                // Assuming data union or accessible field.
-                if (c->match_case.is_ref)
-                {
-                    // _m is pointer when has_ref_binding, use ->
-                    fprintf(out, "ZC_AUTO %s = &_m_%d->data.%s; ", c->match_case.binding_name, id,
-                            f);
-                }
-                else if (has_ref_binding)
-                {
-                    // _m is pointer, use -> but don't take address
-                    fprintf(out, "ZC_AUTO %s = _m_%d->data.%s; ", c->match_case.binding_name, id,
-                            f);
-                }
-                else
-                {
-                    // _m is value, use .
-                    fprintf(out, "ZC_AUTO %s = _m_%d.data.%s; ", c->match_case.binding_name, id, f);
+                    char *v = strrchr(c->match_case.pattern, '_');
+                    if (v)
+                    {
+                        v++;
+                    }
+                    else
+                    {
+                        v = c->match_case.pattern;
+                    }
+
+                    if (c->match_case.binding_count > 1)
+                    {
+                        // Tuple destructuring: data.Variant.vI
+                        if (is_r)
+                        {
+                            fprintf(out, "ZC_AUTO %s = &_m_%d->data.%s.v%d; ", bname, id, v, i);
+                        }
+                        else if (has_ref_binding)
+                        {
+                            fprintf(out, "ZC_AUTO %s = _m_%d->data.%s.v%d; ", bname, id, v, i);
+                        }
+                        else
+                        {
+                            fprintf(out, "ZC_AUTO %s = _m_%d.data.%s.v%d; ", bname, id, v, i);
+                        }
+                    }
+                    else
+                    {
+                        // Single destructuring: data.Variant
+                        if (is_r)
+                        {
+                            fprintf(out, "ZC_AUTO %s = &_m_%d->data.%s; ", bname, id, v);
+                        }
+                        else if (has_ref_binding)
+                        {
+                            fprintf(out, "ZC_AUTO %s = _m_%d->data.%s; ", bname, id, v);
+                        }
+                        else
+                        {
+                            fprintf(out, "ZC_AUTO %s = _m_%d.data.%s; ", bname, id, v);
+                        }
+                    }
                 }
             }
         }

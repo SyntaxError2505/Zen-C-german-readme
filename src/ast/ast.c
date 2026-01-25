@@ -129,6 +129,11 @@ int type_eq(Type *a, Type *b)
         return 1;
     }
 
+    if (a->kind == TYPE_UNKNOWN || b->kind == TYPE_UNKNOWN)
+    {
+        return 1;
+    }
+
     // Lax integer matching (bool == int, char == i8, etc.).
     if (is_integer_type(a) && is_integer_type(b))
     {

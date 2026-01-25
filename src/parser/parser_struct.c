@@ -925,8 +925,50 @@ ASTNode *parse_enum(ParserContext *ctx, Lexer *l)
             Type *payload = NULL;
             if (lexer_peek(l).type == TOK_LPAREN)
             {
-                lexer_next(l);
-                payload = parse_type_obj(ctx, l);
+                lexer_next(l); // eat (
+                Type *first_t = parse_type_obj(ctx, l);
+
+                if (lexer_peek(l).type == TOK_COMMA)
+                {
+                    // Multi-arg variant -> Tuple
+                    char sig[512];
+                    sig[0] = 0;
+
+                    char *s = type_to_string(first_t);
+                    if (strlen(s) > 250)
+                    { // Safety check
+                        zpanic_at(lexer_peek(l), "Type name too long for tuple generation");
+                    }
+                    strcpy(sig, s);
+                    free(s);
+
+                    while (lexer_peek(l).type == TOK_COMMA)
+                    {
+                        lexer_next(l); // eat ,
+                        strcat(sig, "_");
+                        Type *next_t = parse_type_obj(ctx, l);
+                        char *ns = type_to_string(next_t);
+                        if (strlen(sig) + strlen(ns) + 2 > 510)
+                        {
+                            zpanic_at(lexer_peek(l), "Tuple signature too long");
+                        }
+                        strcat(sig, ns);
+                        free(ns);
+                    }
+
+                    register_tuple(ctx, sig);
+
+                    char *tuple_name = xmalloc(strlen(sig) + 7);
+                    sprintf(tuple_name, "Tuple_%s", sig);
+
+                    payload = type_new(TYPE_STRUCT);
+                    payload->name = tuple_name;
+                }
+                else
+                {
+                    payload = first_t;
+                }
+
                 if (lexer_next(l).type != TOK_RPAREN)
                 {
                     zpanic_at(lexer_peek(l), "Expected )");
@@ -942,6 +984,24 @@ ASTNode *parse_enum(ParserContext *ctx, Lexer *l)
             char mangled[256];
             sprintf(mangled, "%s_%s", ename, vname);
             register_enum_variant(ctx, ename, mangled, va->variant.tag_id);
+
+            // Register Constructor Function Signature
+            if (payload && !gp) // Only for non-generic enums for now
+            {
+                Type **at = xmalloc(sizeof(Type *));
+                at[0] = payload;
+                Type *ret_t = type_new(TYPE_ENUM);
+                ret_t->name = xstrdup(ename);
+
+                register_func(ctx, mangled, 1, NULL, at, ret_t, 0, 0, vt);
+            }
+            else if (!gp)
+            {
+                // No payload: fn Name() -> Enum
+                Type *ret_t = type_new(TYPE_ENUM);
+                ret_t->name = xstrdup(ename);
+                register_func(ctx, mangled, 0, NULL, NULL, ret_t, 0, 0, vt);
+            }
 
             // Handle explicit assignment: Ok = 5
             if (lexer_peek(l).type == TOK_OP && *lexer_peek(l).start == '=')
