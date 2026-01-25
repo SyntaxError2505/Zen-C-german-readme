@@ -20,6 +20,14 @@
 #endif
 #endif
 
+#ifdef _WIN32
+#include <sys/types.h>
+#ifndef PATH_MAX
+#define PATH_MAX 260
+#endif
+#define realpath(N, R) _fullpath((R), (N), PATH_MAX)
+#endif
+
 // **ZEN VERSION**
 #ifndef ZEN_VERSION
 #define ZEN_VERSION "0.1.0"
