@@ -3599,7 +3599,10 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                 free(print_code);
 
                 ASTNode *n = ast_create(NODE_RAW_STMT);
-                n->raw_stmt.content = final_code;
+                char *stmt_code = xmalloc(strlen(final_code) + 2);
+                sprintf(stmt_code, "%s;", final_code);
+                free(final_code);
+                n->raw_stmt.content = stmt_code;
                 return n;
             }
         }
@@ -3639,7 +3642,10 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
             free(inner);
 
             ASTNode *n = ast_create(NODE_RAW_STMT);
-            n->raw_stmt.content = code;
+            char *stmt_code = xmalloc(strlen(code) + 2);
+            sprintf(stmt_code, "%s;", code);
+            free(code);
+            n->raw_stmt.content = stmt_code;
             return n;
         }
     }

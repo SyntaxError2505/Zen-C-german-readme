@@ -738,6 +738,7 @@ int emit_move_invalidation(ParserContext *ctx, ASTNode *node, FILE *out)
     {
         if (node->type == NODE_EXPR_VAR)
         {
+            fprintf(out, "__z_drop_flag_%s = 0; ", node->var_ref.name);
             fprintf(out, "memset(&%s, 0, sizeof(%s))", node->var_ref.name, node->var_ref.name);
             return 1;
         }

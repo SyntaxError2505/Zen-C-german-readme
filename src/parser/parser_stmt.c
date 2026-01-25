@@ -1887,7 +1887,11 @@ ASTNode *parse_statement(ParserContext *ctx, Lexer *l)
             }
 
             ASTNode *n = ast_create(NODE_RAW_STMT);
-            n->raw_stmt.content = code;
+            // Append semicolon to Statement Expression to make it a valid statement
+            char *stmt_code = xmalloc(strlen(code) + 2);
+            sprintf(stmt_code, "%s;", code);
+            free(code);
+            n->raw_stmt.content = stmt_code;
             n->raw_stmt.used_symbols = used_syms;
             n->raw_stmt.used_symbol_count = used_count;
             free(inner);
@@ -2433,7 +2437,11 @@ ASTNode *parse_statement(ParserContext *ctx, Lexer *l)
             }
 
             ASTNode *n = ast_create(NODE_RAW_STMT);
-            n->raw_stmt.content = code;
+            // Append semicolon to Statement Expression to make it a valid statement
+            char *stmt_code = xmalloc(strlen(code) + 2);
+            sprintf(stmt_code, "%s;", code);
+            free(code);
+            n->raw_stmt.content = stmt_code;
             n->raw_stmt.used_symbols = used_syms;
             n->raw_stmt.used_symbol_count = used_count;
             return n;

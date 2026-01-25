@@ -886,9 +886,27 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
                 }
 
                 ASTNode *def = find_struct_def(ctx, clean_type);
-                if (def && def->type_info && def->type_info->traits.has_drop)
+                int has_drop = (def && def->type_info && def->type_info->traits.has_drop);
+
+                if (has_drop)
                 {
-                    fprintf(out, "__attribute__((cleanup(%s__Drop_glue))) ", clean_type);
+                    // Drop Flag: int __z_drop_flag_name = 1;
+                    fprintf(out, "int __z_drop_flag_%s = 1; ", node->var_decl.name);
+
+                    // Synthesize Defer: if (__z_drop_flag_name) Name__Drop_drop(&name);
+                    ASTNode *defer_node = xmalloc(sizeof(ASTNode));
+                    defer_node->type = NODE_RAW_STMT;
+                    char *stmt_str =
+                        xmalloc(256 + strlen(node->var_decl.name) * 2 + strlen(clean_type));
+                    sprintf(stmt_str, "if (__z_drop_flag_%s) %s__Drop_glue(&%s);",
+                            node->var_decl.name, clean_type, node->var_decl.name);
+                    defer_node->raw_stmt.content = stmt_str;
+                    defer_node->line = node->line;
+
+                    if (defer_count < MAX_DEFER)
+                    {
+                        defer_stack[defer_count++] = defer_node;
+                    }
                 }
 
                 // Emit Variable with Type
@@ -930,9 +948,29 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
                     }
 
                     ASTNode *def = find_struct_def(ctx, clean_type);
-                    if (def && def->type_info && def->type_info->traits.has_drop)
+                    int has_drop = (def && def->type_info && def->type_info->traits.has_drop);
+
+                    if (has_drop)
                     {
-                        fprintf(out, "__attribute__((cleanup(%s__Drop_glue))) ", clean_type);
+                        // Drop Flag: int __z_drop_flag_name = 1;
+                        fprintf(out, "int __z_drop_flag_%s = 1; ", node->var_decl.name);
+
+                        // Synthesize Defer: if (__z_drop_flag_name) Name__Drop_drop(&name);
+                        ASTNode *defer_node = xmalloc(sizeof(ASTNode));
+                        defer_node->type = NODE_RAW_STMT;
+                        // Build string
+                        char *stmt_str =
+                            xmalloc(256 + strlen(node->var_decl.name) * 2 + strlen(clean_type));
+                        sprintf(stmt_str, "if (__z_drop_flag_%s) %s__Drop_glue(&%s);",
+                                node->var_decl.name, clean_type, node->var_decl.name);
+                        defer_node->raw_stmt.content = stmt_str;
+                        defer_node->line = node->line;
+
+                        // Push to defer stack
+                        if (defer_count < MAX_DEFER)
+                        {
+                            defer_stack[defer_count++] = defer_node;
+                        }
                     }
 
                     emit_var_decl_type(ctx, out, inferred, node->var_decl.name);
@@ -940,6 +978,7 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
                     fprintf(out, " = ");
                     codegen_expression(ctx, node->var_decl.init_expr, out);
                     fprintf(out, ";\n");
+
                     if (node->var_decl.init_expr &&
                         emit_move_invalidation(ctx, node->var_decl.init_expr, out))
                     {
@@ -1474,6 +1513,7 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
     }
     case NODE_REPL_PRINT:
     {
+        // Safe block for printing
         fprintf(out, "{ ");
         emit_auto_type(ctx, node->repl_print.expr, node->token, out);
         fprintf(out, " _zval = (");
@@ -1652,6 +1692,9 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
         fprintf(out, ");\n");
         break;
     }
+    case NODE_RAW_STMT:
+        fprintf(out, "    %s\n", node->raw_stmt.content);
+        break;
     default:
         codegen_expression(ctx, node, out);
         fprintf(out, ";\n");
