@@ -70,21 +70,9 @@ static void emit_single_pattern_cond(const char *pat, int id, int is_ptr, FILE *
             fprintf(out, "strcmp(_m_%d, %s) == 0", id, pat);
         }
     }
-    else if (pat[0] == '\'')
-    {
-        // Char literal pattern
-        if (is_ptr)
-        {
-            fprintf(out, "*_m_%d == %s", id, pat);
-        }
-        else
-        {
-            fprintf(out, "_m_%d == %s", id, pat);
-        }
-    }
     else
     {
-        // Numeric or simple pattern
+        // Numeric, Char literal (removed duplicate branch), or simple pattern
         if (is_ptr)
         {
             fprintf(out, "*_m_%d == %s", id, pat);

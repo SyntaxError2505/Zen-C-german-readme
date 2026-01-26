@@ -26,7 +26,7 @@ static void send_json_response(cJSON *root)
     char *str = cJSON_PrintUnformatted(root);
     if (str)
     {
-        fprintf(stdout, "Content-Length: %ld\r\n\r\n%s", strlen(str), str);
+        fprintf(stdout, "Content-Length: %zu\r\n\r\n%s", strlen(str), str);
         fflush(stdout);
         free(str);
     }

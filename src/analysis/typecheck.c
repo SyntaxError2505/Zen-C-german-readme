@@ -15,6 +15,7 @@ static void tc_error(TypeChecker *tc, Token t, const char *msg)
 static void tc_enter_scope(TypeChecker *tc)
 {
     Scope *s = malloc(sizeof(Scope));
+    if (!s) return;
     s->symbols = NULL;
     s->parent = tc->current_scope;
     tc->current_scope = s;
