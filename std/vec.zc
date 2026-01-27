@@ -190,6 +190,14 @@ impl Vec<T> {
         return self.data[idx];
     }
 
+    fn get_ref(self, idx: usize) -> T* {
+        if (idx >= self.len) {
+            !"Panic: Index out of bounds";
+            exit(1);
+        }
+        return &self.data[idx];
+    }
+
     fn last(self) -> T {
         if (self.len == 0) {
             !"Panic: last called on empty Vec";

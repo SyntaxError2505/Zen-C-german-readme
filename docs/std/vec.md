@@ -63,6 +63,7 @@ struct Vec<T> {
 | Method | Signature | Description |
 | :--- | :--- | :--- |
 | **get** | `get(self, idx: usize) -> T` | Returns a copy of the element at `idx`. Panics if out of bounds. |
+| **get_ref** | `get_ref(self, idx: usize) -> T*` | Returns a pointer to the element at `idx`. Panics if out of bounds. Useful for avoiding copies. |
 | **set** | `set(self, idx: usize, item: T)` | Overwrites the element at `idx`. Panics if out of bounds. |
 | **first** | `first(self) -> T` | Returns a copy of the first element. Panics if empty. |
 | **last** | `last(self) -> T` | Returns a copy of the last element. Panics if empty. |

@@ -32,7 +32,7 @@ impl Graph {
         visited[vertex] = true;
         order.push(vertex);
 
-        let neighbors = self.adj_list.data[vertex];
+        let neighbors = self.adj_list.get_ref(vertex);
         let neighbor_count = (int)neighbors.len;
         for i in 0..neighbor_count {
             let neighbor = neighbors.data[i];
@@ -83,7 +83,7 @@ impl Graph {
             visited.data[vertex] = true;
             order.push(vertex);
 
-            let neighbors = self.adj_list.data[vertex];
+            let neighbors = self.adj_list.get_ref(vertex);
             let i = (int)neighbors.len - 1;
             while i >= 0 {
                 let neighbor = neighbors.data[i];
