@@ -54,3 +54,18 @@ test "test_static_local" {
     assert b == 2;
     assert c == 3;
 }
+
+struct CastFoo {
+    val: int;
+}
+
+fn test_cast_precedence_helper(ptr: void*) -> int {
+    return ((CastFoo*)ptr)->val;
+}
+
+test "test_cast_precedence" {
+    let f = CastFoo{val: 42};
+    let ptr = (void*)&f;
+    let val = test_cast_precedence_helper(ptr);
+    assert(val == 42, "Cast precedence failed");
+}

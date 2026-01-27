@@ -745,7 +745,15 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
         }
         else
         {
+            if (node->member.target->type == NODE_EXPR_CAST)
+            {
+                fprintf(out, "(");
+            }
             codegen_expression(ctx, node->member.target, out);
+            if (node->member.target->type == NODE_EXPR_CAST)
+            {
+                fprintf(out, ")");
+            }
             // Verify actual type instead of trusting is_pointer_access flag
             char *lt = infer_type(ctx, node->member.target);
             int actually_ptr = 0;
