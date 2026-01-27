@@ -9,14 +9,22 @@ import "std/string.zc"
 
 fn main() {
     let s = String::from("Hello");
-    s.append(String::from(" World"));
+    // Ensure memory is freed
+    defer { s.free(); }
+
+    // Append requires a pointer to another String
+    let part = String::from(" World");
+    defer { part.free(); }
     
-    println "{s}"; // Prints "Hello World"
+    s.append(&part);
+    
+    // Use c_str() to print
+    println "{s.c_str()}"; // Prints "Hello World"
     
     if (s.starts_with("Hello")) {
         // ...
     }
-} // s is freed automatically
+}
 ```
 
 ## Structure
