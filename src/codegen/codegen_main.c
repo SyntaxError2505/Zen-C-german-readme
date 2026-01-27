@@ -253,6 +253,48 @@ static ASTNode *topo_sort_structs(ASTNode *head)
     return result;
 }
 
+// Helper structure for tracking emitted content to prevent duplicates
+typedef struct EmittedContent
+{
+    char *content;
+    struct EmittedContent *next;
+} EmittedContent;
+
+// Check if content has already been emitted
+static int is_content_emitted(EmittedContent *list, const char *content)
+{
+    while (list)
+    {
+        if (strcmp(list->content, content) == 0)
+        {
+            return 1;
+        }
+        list = list->next;
+    }
+    return 0;
+}
+
+// Mark content as emitted
+static void mark_content_emitted(EmittedContent **list, const char *content)
+{
+    EmittedContent *node = xmalloc(sizeof(EmittedContent));
+    node->content = xstrdup(content);
+    node->next = *list;
+    *list = node;
+}
+
+// Free emitted content list
+static void free_emitted_list(EmittedContent *list)
+{
+    while (list)
+    {
+        EmittedContent *next = list->next;
+        free(list->content);
+        free(list);
+        list = next;
+    }
+}
+
 // Main entry point for code generation.
 void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
 {
@@ -406,6 +448,9 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
         emit_type_aliases(kids, out);  // Emit local aliases (redundant but safe)
         emit_trait_defs(kids, out);
 
+        // Track emitted raw statements to prevent duplicates
+        EmittedContent *emitted_raw = NULL;
+
         // First pass: emit ONLY preprocessor directives before struct defs
         // so that macros like `panic` are available in function bodies
         ASTNode *raw_iter = kids;
@@ -419,10 +464,14 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
                 {
                     content++;
                 }
-                // Emit only if it's a preprocessor directive
+                // Emit only if it's a preprocessor directive and not already emitted
                 if (*content == '#')
                 {
-                    fprintf(out, "%s\n", raw_iter->raw_stmt.content);
+                    if (!is_content_emitted(emitted_raw, raw_iter->raw_stmt.content))
+                    {
+                        fprintf(out, "%s\n", raw_iter->raw_stmt.content);
+                        mark_content_emitted(&emitted_raw, raw_iter->raw_stmt.content);
+                    }
                 }
             }
             raw_iter = raw_iter->next;
@@ -446,7 +495,11 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
                 }
                 if (*content != '#')
                 {
-                    fprintf(out, "%s\n", raw_iter->raw_stmt.content);
+                    if (!is_content_emitted(emitted_raw, raw_iter->raw_stmt.content))
+                    {
+                        fprintf(out, "%s\n", raw_iter->raw_stmt.content);
+                        mark_content_emitted(&emitted_raw, raw_iter->raw_stmt.content);
+                    }
                 }
             }
             raw_iter = raw_iter->next;
@@ -461,10 +514,32 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
             StructRef *struct_ref = ctx->parsed_globals_list;
             while (struct_ref)
             {
-                ASTNode *copy = xmalloc(sizeof(ASTNode));
-                *copy = *struct_ref->node;
-                copy->next = merged_globals;
-                merged_globals = copy;
+                // Check if this global is already in the merged list (by name)
+                int is_duplicate = 0;
+                if (struct_ref->node && (struct_ref->node->type == NODE_VAR_DECL ||
+                                         struct_ref->node->type == NODE_CONST))
+                {
+                    const char *var_name = struct_ref->node->var_decl.name;
+                    ASTNode *check = merged_globals;
+                    while (check)
+                    {
+                        if ((check->type == NODE_VAR_DECL || check->type == NODE_CONST) &&
+                            check->var_decl.name && strcmp(check->var_decl.name, var_name) == 0)
+                        {
+                            is_duplicate = 1;
+                            break;
+                        }
+                        check = check->next;
+                    }
+                }
+
+                if (!is_duplicate)
+                {
+                    ASTNode *copy = xmalloc(sizeof(ASTNode));
+                    *copy = *struct_ref->node;
+                    copy->next = merged_globals;
+                    merged_globals = copy;
+                }
 
                 struct_ref = struct_ref->next;
             }
@@ -660,5 +735,8 @@ void codegen_node(ParserContext *ctx, ASTNode *node, FILE *out)
         {
             fprintf(out, "\nint main() { _z_run_tests(); return 0; }\n");
         }
+
+        // Clean up emitted content tracking list
+        free_emitted_list(emitted_raw);
     }
 }
