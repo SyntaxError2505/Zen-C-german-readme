@@ -493,8 +493,15 @@ for i in 0..<10 { ... }     // Exclusivo (Explícito)
 for i in 0..=10 { ... }     // Inclusivo (0 al 10)
 for i in 0..10 step 2 { ... }
 
-// Iterador (Vec, Array, o Iterable personalizado)
-for item in coleccion { ... }
+// Iterador (Vec o Iterable personalizado)
+for item in vec { ... }
+
+// Iterar sobre arrays de tamaño fijo directamente
+let arr: int[5] = [1, 2, 3, 4, 5];
+for val in arr {
+    // val es int
+    println "{val}";
+}
 
 // While
 while x < 10 { ... }
@@ -507,6 +514,7 @@ externo: loop {
 // Repetir N veces
 for _ in 0..5 { ... }
 ```
+
 
 #### Control Avanzado
 ```zc

@@ -493,8 +493,15 @@ for i in 0..<10 { ... }     // 左閉右開 (顯式)
 for i in 0..=10 { ... }     // 全閉 (0 到 10)
 for i in 0..10 step 2 { ... }
 
-// 迭代器 (Vec, Array, 或自定義 Iterable)
-for item in collection { ... }
+// 迭代器 (Vec 或自定義 Iterable)
+for item in vec { ... }
+
+// 直接迭代固定大小數組
+let arr: int[5] = [1, 2, 3, 4, 5];
+for val in arr {
+    // val 是 int
+    println "{val}";
+}
 
 // While 循環
 while x < 10 { ... }

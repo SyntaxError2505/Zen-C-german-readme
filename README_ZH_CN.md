@@ -485,26 +485,33 @@ match opt {
 }
 ```
 
-#### 循环
+#### 循環
 ```zc
-// 区间迭代
-for i in 0..10 { ... }      // 左闭右开 (0 到 9)
-for i in 0..<10 { ... }     // 左闭右开 (显式)
-for i in 0..=10 { ... }     // 全闭 (0 到 10)
+// 區間迭代
+for i in 0..10 { ... }      // 左閉右開 (0 到 9)
+for i in 0..<10 { ... }     // 左閉右開 (顯式)
+for i in 0..=10 { ... }     // 全閉 (0 到 10)
 for i in 0..10 step 2 { ... }
 
-// 迭代器 (Vec, Array, 或自定义 Iterable)
-for item in collection { ... }
+// 迭代器 (Vec 或自定義 Iterable)
+for item in vec { ... }
 
-// While 循环
+// 直接迭代固定大小数组
+let arr: int[5] = [1, 2, 3, 4, 5];
+for val in arr {
+    // val 是 int
+    println "{val}";
+}
+
+// While 循環
 while x < 10 { ... }
 
-// 带标签的无限循环
+// 帶標籤的無限循環
 outer: loop {
     if done { break outer; }
 }
 
-// 重复 N 次
+// 重複 N 次
 for _ in 0..5 { ... }
 ```
 

@@ -1,10 +1,45 @@
 
+import "./option.zc"
+
 struct Slice<T> {
     data: T*;
     len: usize;
 }
 
+struct SliceIter<T> {
+    data: T*;
+    count: usize;
+    idx: usize;
+}
+
+impl SliceIter<T> {
+    fn next(self) -> Option<T> {
+        if (self.idx < self.count) {
+            let item = self.data[self.idx];
+            self.idx = self.idx + 1;
+            return Option<T>::Some(item);
+        }
+        return Option<T>::None();
+    }
+    
+    fn iterator(self) -> SliceIter<T> {
+        return *self;
+    }
+}
+
 impl Slice<T> {
+    fn from_array(arr: T*, len: usize) -> Slice<T> {
+        return Slice<T> { data: arr, len: len };
+    }
+
+    fn iterator(self) -> SliceIter<T> {
+        return SliceIter<T> {
+            data: self.data,
+            count: self.len,
+            idx: 0
+        };
+    }
+
     fn length(self) -> usize {
         return self.len;
     }

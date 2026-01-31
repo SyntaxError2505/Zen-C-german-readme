@@ -64,13 +64,28 @@ void emit_c_decl(FILE *out, const char *type_str, const char *name)
     }
     else if (generic && (!bracket || generic < bracket))
     {
-        // Strip generic part for C output
-        int base_len = generic - type_str;
-        fprintf(out, "%.*s %s", base_len, type_str, name);
-
-        if (bracket)
+        char *gt = strchr(generic, '>');
+        if (gt)
         {
-            fprintf(out, "%s", bracket);
+            int base_len = generic - type_str;
+            int arg_len = gt - generic - 1;
+
+            fprintf(out, "%.*s_%.*s %s", base_len, type_str, arg_len, generic + 1, name);
+
+            if (bracket)
+            {
+                fprintf(out, "%s", bracket);
+            }
+        }
+        else
+        {
+            int base_len = generic - type_str;
+            fprintf(out, "%.*s %s", base_len, type_str, name);
+
+            if (bracket)
+            {
+                fprintf(out, "%s", bracket);
+            }
         }
     }
     else if (bracket)

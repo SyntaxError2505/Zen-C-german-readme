@@ -65,6 +65,52 @@ static void codegen_var_expr(ParserContext *ctx, ASTNode *node, FILE *out)
             zwarn_at(node->token, "%s\n   = help: %s", msg, help);
         }
     }
+
+    // Check for static method call pattern: Type::method or Slice<T>::method
+    char *double_colon = strstr(node->var_ref.name, "::");
+    if (double_colon)
+    {
+        // Extract type name and method name
+        int type_len = double_colon - node->var_ref.name;
+        char *type_name = xmalloc(type_len + 1);
+        strncpy(type_name, node->var_ref.name, type_len);
+        type_name[type_len] = 0;
+
+        char *method_name = double_colon + 2; // Skip ::
+
+        // Handle generic types: Slice<int> -> Slice_int
+        char mangled_type[256];
+        if (strchr(type_name, '<'))
+        {
+            // Generic type - need to mangle it
+            char *lt = strchr(type_name, '<');
+            char *gt = strchr(type_name, '>');
+
+            if (lt && gt)
+            {
+                // Extract base type and type argument
+                *lt = 0;
+                char *type_arg = lt + 1;
+                *gt = 0;
+
+                sprintf(mangled_type, "%s_%s", type_name, type_arg);
+            }
+            else
+            {
+                strcpy(mangled_type, type_name);
+            }
+        }
+        else
+        {
+            strcpy(mangled_type, type_name);
+        }
+
+        // Output as Type__method
+        fprintf(out, "%s__%s", mangled_type, method_name);
+        free(type_name);
+        return;
+    }
+
     fprintf(out, "%s", node->var_ref.name);
 }
 
@@ -348,6 +394,7 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
             }
 
             // Check for Static Enum Variant Call: Enum.Variant(...)
+
             if (target->type == NODE_EXPR_VAR)
             {
                 ASTNode *def = find_struct_def(ctx, target->var_ref.name);
@@ -418,11 +465,43 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                     base += 7;
                 }
 
+                char *mangled_base = base;
+                char base_buf[256];
+
+                // Mangle generic types: Slice<int> -> Slice_int, Vec<Point> -> Vec_Point
+                char *lt = strchr(base, '<');
+                if (lt)
+                {
+                    char *gt = strchr(lt, '>');
+                    if (gt)
+                    {
+                        int prefix_len = lt - base;
+                        int arg_len = gt - lt - 1;
+                        snprintf(base_buf, 255, "%.*s_%.*s", prefix_len, base, arg_len, lt + 1);
+                        mangled_base = base_buf;
+                    }
+                }
+
                 if (!strchr(type, '*') && target->type == NODE_EXPR_CALL)
                 {
-                    fprintf(out, "({ %s _t = ", type);
+                    char *type_mangled = type;
+                    char type_buf[256];
+                    char *t_lt = strchr(type, '<');
+                    if (t_lt)
+                    {
+                        char *t_gt = strchr(t_lt, '>');
+                        if (t_gt)
+                        {
+                            int p_len = t_lt - type;
+                            int a_len = t_gt - t_lt - 1;
+                            snprintf(type_buf, 255, "%.*s_%.*s", p_len, type, a_len, t_lt + 1);
+                            type_mangled = type_buf;
+                        }
+                    }
+
+                    fprintf(out, "({ %s _t = ", type_mangled);
                     codegen_expression(ctx, target, out);
-                    fprintf(out, "; %s__%s(&_t", base, method);
+                    fprintf(out, "; %s__%s(&_t", mangled_base, method);
                     ASTNode *arg = node->call.args;
                     while (arg)
                     {
@@ -435,10 +514,11 @@ void codegen_expression(ParserContext *ctx, ASTNode *node, FILE *out)
                 else
                 {
                     // Mixin Lookup Logic
-                    char *call_base = base;
+                    char *call_base = mangled_base;
+
                     int need_cast = 0;
                     char mixin_func_name[128];
-                    sprintf(mixin_func_name, "%s__%s", base, method);
+                    sprintf(mixin_func_name, "%s__%s", call_base, method);
 
                     char *resolved_method_suffix = NULL;
 
