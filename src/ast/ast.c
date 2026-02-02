@@ -101,6 +101,9 @@ int is_integer_type(Type *t)
             t->kind == TYPE_ISIZE || t->kind == TYPE_BYTE || t->kind == TYPE_RUNE ||
             t->kind == TYPE_UINT || t->kind == TYPE_I128 || t->kind == TYPE_U128 ||
             t->kind == TYPE_BITINT || t->kind == TYPE_UBITINT ||
+            t->kind == TYPE_C_INT || t->kind == TYPE_C_UINT || t->kind == TYPE_C_LONG ||
+            t->kind == TYPE_C_ULONG || t->kind == TYPE_C_SHORT || t->kind == TYPE_C_USHORT ||
+            t->kind == TYPE_C_CHAR || t->kind == TYPE_C_UCHAR ||
             (t->kind == TYPE_STRUCT && t->name &&
              (0 == strcmp(t->name, "int8_t") || 0 == strcmp(t->name, "uint8_t") ||
               0 == strcmp(t->name, "int16_t") || 0 == strcmp(t->name, "uint16_t") ||

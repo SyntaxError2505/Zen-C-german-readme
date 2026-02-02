@@ -370,8 +370,7 @@ static void check_format_string(ASTNode *call, Token t)
             if (spec == 'd' || spec == 'i' || spec == 'u' || spec == 'x' || spec == 'X' ||
                 spec == 'o')
             {
-                if (vt && vt->kind != TYPE_INT && vt->kind != TYPE_I64 && !type_is_unsigned(vt) &&
-                    vt->kind != TYPE_CHAR)
+                if (vt && !is_integer_type(vt))
                 {
                     warn_format_string(t, arg_num, "integer", got_type);
                 }
@@ -4116,6 +4115,7 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                 break;
             }
             ASTNode *node = ast_create(NODE_EXPR_MEMBER);
+            node->token = field;
             node->member.target = lhs;
             node->member.field = token_strdup(field);
             node->member.is_pointer_access = 1;
@@ -4169,6 +4169,7 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                 break;
             }
             ASTNode *node = ast_create(NODE_EXPR_MEMBER);
+            node->token = field;
             node->member.target = lhs;
             node->member.field = token_strdup(field);
             node->member.is_pointer_access = 2;
@@ -4350,6 +4351,52 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
 
                     if (sig)
                     {
+                        // Check if this is a static method being called with dot operator
+                        // Static methods don't have 'self' as first parameter
+                        int is_static_method = 0;
+                        if (sig->total_args == 0)
+                        {
+                            // No arguments at all - definitely static
+                            is_static_method = 1;
+                        }
+                        else if (sig->arg_types[0])
+                        {
+                            // Check if first parameter is a pointer to the struct type
+                            // Instance methods have: fn method(self) where self is StructType*
+                            // Static methods have: fn method(x: int, y: int) etc.
+                            Type *first_param = sig->arg_types[0];
+
+                            // If first param is not a pointer, it's likely static
+                            // OR if it's a pointer but not to this struct type
+                            if (first_param->kind != TYPE_POINTER)
+                            {
+                                is_static_method = 1;
+                            }
+                            else if (first_param->inner)
+                            {
+                                // Check if the inner type matches the struct
+                                char *inner_name = NULL;
+                                if (first_param->inner->kind == TYPE_STRUCT)
+                                {
+                                    inner_name = first_param->inner->name;
+                                }
+
+                                if (!inner_name || strcmp(inner_name, struct_name) != 0)
+                                {
+                                    is_static_method = 1;
+                                }
+                            }
+                        }
+
+                        if (is_static_method)
+                        {
+                            zpanic_at(lhs->token,
+                                      "Cannot call static method '%s' with dot operator\n"
+                                      "   = help: Use '%s::%s(...)' instead of instance.%s(...)",
+                                      lhs->member.field, struct_name, lhs->member.field,
+                                      lhs->member.field);
+                        }
+
                         resolved_name = xstrdup(mangled);
                         resolved_sig = sig;
 
@@ -4772,6 +4819,7 @@ ASTNode *parse_expr_prec(ParserContext *ctx, Lexer *l, Precedence min_prec)
                 break;
             }
             ASTNode *node = ast_create(NODE_EXPR_MEMBER);
+            node->token = field;
             node->member.target = lhs;
             node->member.field = token_strdup(field);
             node->member.is_pointer_access = 0;

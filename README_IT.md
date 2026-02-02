@@ -1,7 +1,7 @@
 
 <div align="center">
 
-[English](README.md) • [简体中文](README_ZH_CN.md) • [繁體中文](README_ZH_TW.md) • [Español](README_ES.md) • [Italiano](README_IT.md) • [Português Brasileiro](README_PT_BR.md)
+[English](README.md) • [Русский](README_RU.md) • [简体中文](README_ZH_CN.md) • [繁體中文](README_ZH_TW.md) • [Español](README_ES.md) • [Italiano](README_IT.md) • [Português Brasileiro](README_PT_BR.md)
 
 </div>
 
@@ -477,9 +477,9 @@ match val {
 
 // Destrutturazione degli Enums
 match forma {
-    Forma::Cerchio(r)        => println "Raggio: {r}",
-    Forma::Rettangolo(w, h)  => println "Area: {w*h}",
-    Forma::Punto             => println "Punto"
+    Forma::Cerchio(r)        => { println "Raggio: {r}" },
+    Forma::Rettangolo(w, h)  => { println "Area: {w*h}" },
+    Forma::Punto             => { println "Punto" },
 }
 ```
 

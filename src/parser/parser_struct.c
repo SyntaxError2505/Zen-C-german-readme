@@ -315,6 +315,16 @@ ASTNode *parse_impl(ParserContext *ctx, Lexer *l)
             register_generic(ctx, target_gen_param);
         }
 
+        // Check for common error: swapped Struct and Trait
+        // impl MyStruct for MyTrait (Wrong) vs impl MyTrait for MyStruct (Correct)
+        if (!is_trait(name1) && is_trait(name2))
+        {
+            zpanic_at(t1,
+                      "Incorrect usage of impl. Did you mean 'impl %s for %s'? Syntax is 'impl "
+                      "<Trait> for <Struct>'",
+                      name2, name1);
+        }
+
         // Auto-import std/mem.zc if implementing Drop, Copy, or Clone traits
         if (strcmp(name1, "Drop") == 0 || strcmp(name1, "Copy") == 0 || strcmp(name1, "Clone") == 0)
         {

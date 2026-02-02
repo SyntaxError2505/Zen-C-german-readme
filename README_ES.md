@@ -1,7 +1,8 @@
 
 <div align="center">
-[English](README.md) • [简体中文](README_ZH_CN.md) • [繁體中文](README_ZH_TW.md) • [Español](README_ES.md) • [Italiano](README_IT.md) • [Português Brasileiro](README_PT_BR.md)
 
+[English](README.md) • [Русский](README_RU.md) • [简体中文](README_ZH_CN.md) • [繁體中文](README_ZH_TW.md) • [Español](README_ES.md) • [Italiano](README_IT.md) • [Português Brasileiro](README_PT_BR.md)
+  
 </div>
 
 <div align="center">
@@ -474,9 +475,9 @@ match val {
 
 // Desestructuración de Enums
 match shape {
-    Shape::Circle(r)   => println "Radio: {r}",
-    Shape::Rect(w, h)  => println "Área: {w*h}",
-    Shape::Point       => println "Punto"
+    Shape::Circle(r)   => { println "Radio: {r}" },
+    Shape::Rect(w, h)  => { println "Área: {w*h}" },
+    Shape::Point       => { println "Punto" },
 }
 ```
 

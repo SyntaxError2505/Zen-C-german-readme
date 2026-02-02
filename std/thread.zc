@@ -25,8 +25,12 @@ raw {
         z_closure_T *closure = (z_closure_T*)c;
         void (*f)(void*) = (void(*)(void*))closure->func;
         f(closure->ctx);
-        free(c); 
+        free(c);
         return NULL;
+    }
+
+    static int _z_thread_equal(void* handle1, void* handle2) {
+        return pthread_equal((pthread_t)handle1, (pthread_t)handle2);
     }
     
     static int _z_thread_spawn(void *ctx_copy, size_t *out_handle) {
@@ -40,6 +44,14 @@ raw {
     
     static int _z_thread_join(void *handle) {
         return (int)pthread_join((pthread_t)handle, NULL);
+    }
+
+    static int _z_thread_detach(void* handle) {
+        return pthread_detach((pthread_t)handle);
+    }
+
+    static int _z_thread_cancel(void* handle) {
+        return pthread_cancel((pthread_t)handle);
     }
     
     static void _z_mutex_init(void *ptr) {
@@ -63,8 +75,11 @@ raw {
     }
 }
 
+extern fn _z_thread_equal(handle1: void*, handle2: void*) -> c_int;
 extern fn _z_thread_spawn(ctx: void*, out: usize*) -> c_int;
 extern fn _z_thread_join(handle: void*) -> c_int;
+extern fn _z_thread_detach(handle: void*) -> c_int;
+extern fn _z_thread_cancel(handle: void*) -> c_int;
 extern fn _z_mutex_init(ptr: void*);
 extern fn _z_mutex_lock(ptr: void*);
 extern fn _z_mutex_unlock(ptr: void*);
@@ -74,10 +89,17 @@ extern fn _z_usleep(micros: c_int);
 
 
 struct Thread {
-    handle: void*; 
+    handle: void*;
 }
 
 impl Thread {
+    fn eq(self, other: const Thread) -> bool {
+        return _z_thread_equal(self.handle, other.handle);
+    }
+    fn neq(self, other: const Thread) -> bool {
+        return !(self == other);
+    }
+
     fn spawn(func: fn()) -> Result<Thread> {
         let out_handle: usize = 0; 
         
@@ -87,9 +109,8 @@ impl Thread {
         memcpy(ctx, &func, 16);
 
         let ret = _z_thread_spawn(ctx, &out_handle);
-        let zero: c_int = 0;
-        if (ret != zero) {
-            // Failed to spawn
+        
+        if ret != 0 {
             free(ctx);
             return Result<Thread>::Err("Failed to create thread");
         }
@@ -98,9 +119,26 @@ impl Thread {
     }
     
     fn join(self) -> Result<bool> {
-        let ret = _z_thread_join(self.handle);
-        let zero: c_int = 0;
-        if (ret != zero) return Result<bool>::Err("Join failed");
+        let err = _z_thread_join(self.handle);
+        if err {
+            return Result<bool>::Err("Join failed");
+        }
+        return Result<bool>::Ok(true);
+    }
+
+    fn detach(self) -> Result<bool> {
+        let err = _z_thread_detach(self.handle);
+        if err {
+            return Result<bool>::Err("Detach failed");
+        }
+        return Result<bool>::Ok(true);
+    }
+
+    fn cancel(self) -> Result<bool> {
+        let err = _z_thread_cancel(self.handle);
+        if err {
+            return Result<bool>::Err("Cancel failed");
+        }
         return Result<bool>::Ok(true);
     }
 }
@@ -125,7 +163,7 @@ impl Mutex {
     }
     
     fn free(self) {
-        if (self.handle) {
+        if self.handle {
             _z_mutex_destroy(self.handle);
             free(self.handle);
             self.handle = NULL;
