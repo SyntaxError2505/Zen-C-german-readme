@@ -1146,7 +1146,7 @@ Zen C включает стандартную библиотеку (`std`), ох
 | **`std/result.zc`**  | Обработка ошибок (`Ok`/`Err`).                     | [Docs](../docs/std/result.md)  |
 | **`std/path.zc`**    | Кроссплатформенная манипуляция путями.             | [Docs](../docs/std/path.md)    |
 | **`std/env.zc`**     | Переменные окружения процесса.                     | [Docs](../docs/std/env.md)     |
-| **`std/net.zc`**     | TCP сетевое взаимодействие (Sockets).              | [Docs](../docs/std/net.md)     |
+| **`std/net/`**     | TCP, UDP, HTTP, DNS, URL.              | [Docs](../docs/std/net.md)     |
 | **`std/thread.zc`**  | Потоки и синхронизация.                            | [Docs](../docs/std/thread.md)  |
 | **`std/time.zc`**    | Измерение времени и сон.                           | [Docs](../docs/std/time.md)    |
 | **`std/json.zc`**    | Парсинг и сериализация JSON.                       | [Docs](../docs/std/json.md)    |

@@ -1,0 +1,77 @@
+
+include <netdb.h>
+include <sys/types.h>
+include <sys/socket.h>
+include <arpa/inet.h>
+include <string.h>
+
+import "../core.zc"
+import "../result.zc"
+import "../string.zc"
+import "../vec.zc"
+
+// Helper struct for getaddrinfo results
+struct Dns {
+}
+
+extern fn getaddrinfo(node: const char*, service: const char*, hints: const struct addrinfo*, res: struct addrinfo**) -> int;
+extern fn freeaddrinfo(res: struct addrinfo*) -> void;
+extern fn gai_strerror(errcode: int) -> const char*;
+
+raw {
+    // Wrapper to access struct addrinfo fields which might be incomplete in Zen-C struct defs
+    // if we tried to define them manually. 
+    // Actually we can just accept struct addrinfo* as opaque pointers in Zen-C signatures 
+    // and use C helper functions to extract data.
+    
+    struct _z_addrinfo_out {
+        char ip_str[INET6_ADDRSTRLEN];
+    };
+
+    static int _z_dns_resolve(const char* host, char* out_buf, size_t out_len) {
+        struct addrinfo hints;
+        struct addrinfo *result, *rp;
+        
+        memset(&hints, 0, sizeof(struct addrinfo));
+        hints.ai_family = AF_INET;    // Allow IPv4 
+        hints.ai_socktype = SOCK_STREAM; 
+        hints.ai_flags = 0;
+        hints.ai_protocol = 0;          /* Any protocol */
+
+        int s = getaddrinfo(host, NULL, &hints, &result);
+        if (s != 0) {
+            return s;
+        }
+
+        // Just pick the first one for now
+        // TODO: Return all?
+        int found = 0;
+        for (rp = result; rp != NULL; rp = rp->ai_next) {
+            struct sockaddr_in *ipv4 = (struct sockaddr_in *)rp->ai_addr;
+            void *addr = &(ipv4->sin_addr);
+            
+            if (inet_ntop(rp->ai_family, addr, out_buf, out_len) != NULL) {
+                found = 1;
+                break;
+            }
+        }
+
+        freeaddrinfo(result);
+        return found ? 0 : -1;
+    }
+}
+
+extern fn _z_dns_resolve(host: const char*, out_buf: char*, out_len: usize) -> int;
+
+impl Dns {
+    fn resolve(host: char*) -> Result<String> {
+        let buf: char[64]; // INET_ADDRSTRLEN is 16, 64 is safe
+        let res = _z_dns_resolve(host, &buf[0], 64);
+        
+        if (res != 0) {
+            return Result<String>::Err("DNS resolution failed");
+        }
+        
+        return Result<String>::Ok(String::new(&buf[0]));
+    }
+}

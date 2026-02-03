@@ -1,0 +1,156 @@
+
+import "./tcp.zc"
+import "./http.zc"
+import "../crypto/sha1.zc"
+import "../encoding/base64.zc"
+
+struct WebSocket {
+    stream: TcpStream;
+    // state, etc.
+}
+
+impl WebSocket {
+    fn from_stream(stream: TcpStream) -> WebSocket {
+        return WebSocket { stream: stream };
+    }
+    
+    // Perform server-side handshake
+    // Assumes stream has already been accepted and *no data read yet*? 
+    // Usually HTTP server reads request, sees Upgrade header, then passes to WebSocket.
+    // So usually we take an ALREADY PARSED Request? or just the stream?
+    // Let's assume we take the stream and a buffer of what has been read?
+    // Simpler: TcpStream, and we assume we are at the point where we need to send the response.
+    // Actually, usually headers are already read.
+    // So we need the "Sec-WebSocket-Key" from the request.
+    
+    fn handshake(stream: TcpStream, key: String) -> Result<WebSocket> {
+        let ws = WebSocket::from_stream(stream);
+        
+        // 1. Compute Accept Key
+        // Key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+        let guid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+        let buf = String::new(key.c_str());
+        buf.append_c(guid);
+        
+        let sha = Sha1::hash((u8*)buf.c_str(), buf.length());
+        let accept_key = Base64::encode(&sha.bytes[0], 20);
+        
+        buf.free();
+        
+        // 2. Send Response
+        let res = String::new("HTTP/1.1 101 Switching Protocols\r\n");
+        res.append_c("Upgrade: websocket\r\n");
+        res.append_c("Connection: Upgrade\r\n");
+        res.append_c("Sec-WebSocket-Accept: ");
+        res.append(&accept_key);
+        res.append_c("\r\n\r\n");
+        
+        accept_key.free();
+        
+        ws.stream.write((u8*)res.c_str(), res.length());
+        res.free();
+        
+        return Result<WebSocket>::Ok(ws);
+    }
+    
+    fn send(self, msg: String) -> Result<int> {
+        // Send a text frame (unmasked, server->client)
+        // Opcode 0x1 (Text)
+        // FIN bit set (0x80)
+        
+        let len = msg.length();
+        let header: u8[10];
+        let header_len = 0;
+        
+        header[0] = 0x81; // FIN + Text
+        
+        if (len <= 125) {
+            header[1] = (u8)len; // No mask
+            header_len = 2;
+        } else if (len <= 65535) {
+            header[1] = 126;
+            header[2] = (u8)((len >> 8) & 0xFF);
+            header[3] = (u8)(len & 0xFF);
+            header_len = 4;
+        } else {
+            // 64-bit length
+            header[1] = 127;
+            // Assumes u64 support or just truncation for now if no u64 in this scope?
+            // len is usize (usually u64 on 64-bit).
+            // We write 8 bytes.
+            for(let i=0; i<8; i=i+1) {
+                header[2+i] = (u8)((len >> ((7-i)*8)) & 0xFF);
+            }
+            header_len = 10;
+        }
+        
+        self.stream.write(&header[0], header_len);
+        self.stream.write((u8*)msg.c_str(), len);
+        
+        return Result<int>::Ok(0);
+    }
+    
+    fn recv(self) -> Result<String> {
+        // Read simple frame
+        // This is blocking and naive.
+        
+        let head: u8[2];
+        let n = self.stream.read_exact((char*)&head[0], 2);
+        if (n.is_err()) { return Result<String>::Err("Read error"); }
+        
+        let b1 = head[0];
+        let b2 = head[1];
+        
+        let fin = (b1 & 0x80) != 0; 
+        // fin unused for now
+        
+        let opcode = b1 & 0x0F;
+        
+        if (opcode == 8) { return Result<String>::Err("Closed"); } 
+        if (opcode != 1) { return Result<String>::Err("Not text"); } 
+        
+        let masked = (b2 & 0x80) != 0;
+        let len_code = b2 & 0x7F;
+        
+        let len: usize = 0;
+        if (len_code <= 125) {
+            len = (usize)len_code;
+        } else if (len_code == 126) {
+            let len_buf: u8[2];
+            let res = self.stream.read_exact((char*)&len_buf[0], 2);
+            if (res.is_err()) return Result<String>::Err("Read len failed");
+            len = ((usize)len_buf[0] << 8) | (usize)len_buf[1];
+        } else {
+             return Result<String>::Err("Huge frames not supported");
+        }
+        
+        let mask_key: u8[4];
+        if (masked) {
+            let mk_res = self.stream.read_exact((char*)&mask_key[0], 4);
+            if (mk_res.is_err()) { return Result<String>::Err("Read mask failed"); }
+        }
+        
+        // Proper way:
+        let buf = (u8*)malloc(len + 1);
+        let read_res = self.stream.read_exact((char*)buf, len);
+        if (read_res.is_err()) {
+            free(buf);
+            return Result<String>::Err("Read failed");
+        }
+        
+        if (masked) {
+            for(let i=0; i<len; i=i+1) {
+                buf[i] = buf[i] ^ mask_key[i % 4];
+            }
+        }
+        buf[len] = 0; // Null terminate
+        
+        // Debug
+        // println "WS Recv: {(char*)buf}";
+
+        
+        let s = String::new((char*)buf);
+        free(buf);
+        return Result<String>::Ok(s);
+    }
+}

@@ -1,0 +1,27 @@
+
+import "std/encoding/base64.zc"
+
+fn assert_true(cond: bool, msg: char*) {
+    if (!cond) {
+        !"Assertion failed: {msg}";
+        exit(1);
+    }
+}
+
+fn check(input: char*, expected: char*) {
+    let s = Base64::encode((u8*)input, strlen(input));
+    if (!s.eq_str(expected)) {
+        !"Encoded '{input}' expected '{expected}', got '{s.c_str()}'";
+        exit(1);
+    }
+    s.free();
+}
+
+test "Base64 RFC 4648" {
+    check("", "");
+    check("f", "Zg==");
+    check("fo", "Zm8=");
+    check("foo", "Zm9v");
+    check("foob", "Zm9vYg==");
+    check("foobar", "Zm9vYmFy");
+}

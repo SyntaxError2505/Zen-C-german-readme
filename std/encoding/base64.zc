@@ -1,0 +1,94 @@
+
+import "../../std/string.zc"
+
+// Base64 Table
+// ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/
+
+struct Base64 {}
+
+impl Base64 {
+    fn encode(data: u8*, len: usize) -> String {
+        let table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let out = String::new("");
+        
+        let i: usize = 0;
+        let j: usize = 0;
+        
+        // len * 4 / 3 (approx) + padding
+        // let out_len = 4 * ((len + 2) / 3);
+        // out.reserve(out_len); // String::reserve not found
+
+        
+        // Restart loop with correct chunk logic
+        i = 0;
+        while (i < len) {
+            // Read 3 bytes
+            let octet_a: u32 = 0;
+            let octet_b: u32 = 0;
+            let octet_c: u32 = 0;
+            
+            octet_a = (u32)data[i];
+            i = i + 1;
+            
+            if (i < len) {
+                octet_b = (u32)data[i];
+                i = i + 1;
+                
+                if (i < len) {
+                    octet_c = (u32)data[i];
+                    i = i + 1;
+                    
+                    // Full triple
+                    let triple = (octet_a << 16) | (octet_b << 8) | octet_c;
+                    
+                    let c1 = (triple >> 18) & 0x3F;
+                    let c2 = (triple >> 12) & 0x3F;
+                    let c3 = (triple >> 6) & 0x3F;
+                    let c4 = triple & 0x3F;
+                    
+                    let buf: char[5];
+                    buf[0] = table[c1];
+                    buf[1] = table[c2];
+                    buf[2] = table[c3];
+                    buf[3] = table[c4];
+                    buf[4] = 0;
+                    out.append_c(&buf[0]);
+                    
+                } else {
+                    // Only a, b available (len % 3 == 2)
+                    let triple = (octet_a << 16) | (octet_b << 8); // c is 0
+                    
+                    let c1 = (triple >> 18) & 0x3F;
+                    let c2 = (triple >> 12) & 0x3F;
+                    let c3 = (triple >> 6) & 0x3F;
+                    // c4 is padding
+                    
+                    let buf: char[5];
+                    buf[0] = table[c1];
+                    buf[1] = table[c2];
+                    buf[2] = table[c3];
+                    buf[3] = '=';
+                    buf[4] = 0;
+                    out.append_c(&buf[0]);
+                }
+            } else {
+                // Only a available (len % 3 == 1)
+                let triple = (octet_a << 16); // b, c are 0
+                
+                let c1 = (triple >> 18) & 0x3F;
+                let c2 = (triple >> 12) & 0x3F;
+                // c3, c4 padding
+                
+                let buf: char[5];
+                buf[0] = table[c1];
+                buf[1] = table[c2];
+                buf[2] = '=';
+                buf[3] = '=';
+                buf[4] = 0;
+                out.append_c(&buf[0]);
+            }
+        }
+        
+        return out;
+    }
+}

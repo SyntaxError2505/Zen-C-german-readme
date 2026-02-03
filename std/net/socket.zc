@@ -1,0 +1,95 @@
+
+include <sys/socket.h>
+include <netinet/in.h>
+include <arpa/inet.h>
+include <unistd.h>
+include <errno.h>
+
+import "../core.zc"
+import "../result.zc"
+
+def Z_AF_INET = 2;
+def Z_SOCK_STREAM = 1;
+def Z_SOCK_DGRAM = 2;
+
+// Direct externs for simple socket functions
+extern fn socket(domain: c_int, type: c_int, proto: c_int) -> c_int;
+extern fn close(fd: c_int) -> c_int;
+extern fn read(fd: c_int, buf: void*, count: usize) -> isize;
+extern fn strerror(errnum: c_int) -> char*;
+
+// Minimal raw block: required for struct sockaddr_in usage
+raw {
+    static int _z_net_bind(int fd, const char *host, int port) {
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) return -1; // Invalid addr
+        
+        int opt = 1;
+        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        
+        if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2; // Bind fail
+        if (listen(fd, 10) < 0) return -3; // Listen fail
+        return 0;
+    }
+
+    static int _z_net_bind_udp(int fd, const char *host, int port) {
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) return -1;
+        
+        int opt = 1;
+        setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        
+        if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+        return 0;
+    }
+
+    static int _z_net_connect(int fd, const char *host, int port) {
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) return -1; 
+        
+        if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) return -2;
+        return 0;
+    }
+
+    static int _z_net_accept(int fd) {
+        return accept(fd, NULL, NULL);
+    }
+
+    static ssize_t _z_net_write(int fd, const char* buf, size_t n) {
+        return write(fd, (const void*)buf, n);
+    }
+
+    static ssize_t _z_net_recvfrom(int fd, char *buf, size_t len, char *host_out, int *port_out) {
+        struct sockaddr_in addr;
+        socklen_t addr_len = sizeof(addr);
+        ssize_t n = recvfrom(fd, buf, len, 0, (struct sockaddr *)&addr, &addr_len);
+        if (n >= 0 && host_out != NULL && port_out != NULL) {
+            inet_ntop(AF_INET, &addr.sin_addr, host_out, INET_ADDRSTRLEN);
+            *port_out = ntohs(addr.sin_port);
+        }
+        return n;
+    }
+
+    static ssize_t _z_net_sendto(int fd, const char *buf, size_t len, const char *host, int port) {
+        struct sockaddr_in addr;
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(port);
+        if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) return -1;
+        
+        return sendto(fd, buf, len, 0, (struct sockaddr *)&addr, sizeof(addr));
+    }
+}
+
+extern fn _z_net_bind(fd: c_int, host: const char*, port: c_int) -> c_int;
+extern fn _z_net_connect(fd: c_int, host: const char*, port: c_int) -> c_int;
+extern fn _z_net_accept(fd: c_int) -> c_int;
+extern fn _z_net_write(fd: c_int, buf: const char*, n: usize) -> isize;
+extern fn _z_net_recvfrom(fd: c_int, buf: char*, len: usize, host_out: char*, port_out: c_int*) -> isize;
+extern fn _z_net_sendto(fd: c_int, buf: const char*, len: usize, host: const char*, port: c_int) -> isize;
+extern fn _z_net_bind_udp(fd: c_int, host: const char*, port: c_int) -> c_int;

@@ -1164,7 +1164,7 @@ Zen C include una libreria standard (`std`) che ricopre funzionalità essenziali
 | **`std/result.zc`** | Gestione degli errori (`Ok`/`Err`). | [Docs](../docs/std/result.md) |
 | **`std/path.zc`** | Manipolazione dei percorsi Cross-platform. | [Docs](../docs/std/path.md) |
 | **`std/env.zc`** | Variabili d'ambiente del processo. | [Docs](../docs/std/env.md) |
-| **`std/net.zc`** | Networking TCP (Socket). | [Docs](../docs/std/net.md) |
+| **`std/net/`** | TCP, UDP, HTTP, DNS, URL. | [Docs](../docs/std/net.md) |
 | **`std/thread.zc`** | Thread e Sincronizzazione. | [Docs](../docs/std/thread.md) |
 | **`std/time.zc`** | Misuramenti di tempo e `sleep`. | [Docs](../docs/std/time.md) |
 | **`std/json.zc`** | Parsing JSON e serializzazione. | [Docs](../docs/std/json.md) |

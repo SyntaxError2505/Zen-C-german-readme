@@ -20,6 +20,7 @@ extern fn unlink(pathname: const char*) -> c_int;
 extern fn rmdir(pathname: const char*) -> c_int;
 extern fn malloc(size: usize) -> void*;
 extern fn free(ptr: void*);
+extern fn getcwd(buf: char*, size: usize) -> char*;
 
 // Minimal raw block: required for opaque FILE*/DIR* types and C struct access
 // These cannot be expressed in Zen-C extern declarations without type conflicts
@@ -287,4 +288,23 @@ impl File {
         res.forget();
         return ret;
     }
+
+    fn current_dir() -> Result<String> {
+        let buf: char* = malloc(1024);
+        if (buf == NULL) return Result<String>::Err("Out of memory");
+        
+        if (getcwd(buf, 1024) == NULL) {
+            free(buf);
+            return Result<String>::Err("Failed to get current directory");
+        }
+        
+        let s = String::new(buf);
+        free(buf);
+        let res = Result<String>::Ok(s);
+        s.forget();
+        let ret = res;
+        res.forget();
+        return ret;
+    }
+}
 }

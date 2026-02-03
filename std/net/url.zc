@@ -1,0 +1,129 @@
+
+import "../core.zc"
+import "../string.zc"
+import "../result.zc"
+
+struct Url {
+    scheme: String;
+    host: String;
+    port: int;
+    path: String;
+    query: String;
+}
+
+extern fn atoi(s: const char*) -> int;
+
+impl Url {
+    fn parse(raw: String) -> Result<Url> {
+        let u_str = raw.c_str();
+        
+        // 1. Parse Scheme (http://)
+        let scheme_end = strstr(u_str, "://");
+        if (scheme_end == NULL) {
+            return Result<Url>::Err("Missing scheme");
+        }
+        
+        let scheme_len = (usize)(scheme_end - u_str);
+        let scheme = raw.substring(0, scheme_len);
+        
+        let rest: char* = scheme_end + 3; // Skip ://
+        
+        // 2. Default Ports
+        let default_port = 80;
+        if (scheme.eq_str("https")) default_port = 443;
+        
+        // 3. Find end of host (slash or question mark or end of string)
+        let host_end_slash = strchr(rest, '/');
+        let host_end_q = strchr(rest, '?');
+        
+        let host_end = host_end_slash;
+        
+        // If query appears before slash (shouldn't happen in valid URL usually, but handling)
+        // or if slash doesn't exist but query does
+        if (host_end == NULL) host_end = host_end_q;
+        else if (host_end_q != NULL && host_end_q < host_end) host_end = host_end_q;
+        
+        let host_len: usize = 0;
+        if (host_end == NULL) {
+            host_len = strlen(rest);
+        } else {
+            host_len = (usize)(host_end - rest);
+        }
+        
+        // Extract host/port part
+        let host_port_buf = (char*)malloc(host_len + 1);
+        strncpy(host_port_buf, rest, host_len);
+        host_port_buf[host_len] = 0;
+        
+        let host_str = String::new(host_port_buf); // Temporary
+        free(host_port_buf);
+        
+        // Check for Port
+        let port = default_port;
+        let final_host = String::new("");
+        
+        // Handle IPv6 literal? [::1] not supported yet by this parser logic fully
+        
+        let parts = host_str.split(':');
+        if (parts.len == 2) {
+             final_host = parts.get(0).trim(); // trim creates new copy
+             let p_str = parts.get(1);
+             port = atoi(p_str.c_str());
+        } else {
+             // Just host
+             final_host = String::new(host_str.c_str());
+        }
+        
+        // Free split parts
+        // Clean up parts
+        for (let j = 0; j < parts.len; j = j + 1) {
+             parts.get(j).free();
+        }
+        parts.free();
+        host_str.free();
+        
+        // 4. Path
+        let path = String::new("/");
+        let query = String::new("");
+        
+        if (host_end != NULL) {
+            if (*host_end == '/') {
+                // Parse path + maybe query
+                let remaining = String::new(host_end); // /path?query
+                
+                let q_pos = remaining.find('?');
+                if (q_pos.is_some()) {
+                    let q_idx = q_pos.unwrap();
+                    path.free();
+                    path = remaining.substring(0, q_idx);
+                    
+                    query.free();
+                    query = remaining.substring(q_idx + 1, remaining.length() - q_idx - 1);
+                } else {
+                    path.free();
+                    path = remaining.substring(0, remaining.length());
+                }
+                remaining.free();
+            } else if (*host_end == '?') {
+                 // No slash, just query? http://host?q
+                 query.free();
+                 query = String::new(host_end + 1);
+            }
+        }
+        
+        return Result<Url>::Ok(Url {
+            scheme: scheme,
+            host: final_host,
+            port: port,
+            path: path,
+            query: query
+        });
+    }
+    
+    fn destroy(self) {
+        self.scheme.free();
+        self.host.free();
+        self.path.free();
+        self.query.free();
+    }
+}

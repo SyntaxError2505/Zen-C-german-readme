@@ -1,0 +1,33 @@
+
+import "std/net/http.zc"
+import "std/thread.zc"
+
+fn assert_true(cond: bool, msg: char*) {
+    if (!cond) {
+        !"Assertion failed: {msg}";
+        exit(1);
+    }
+}
+
+fn handler(req: Request*, res: Response*) {
+    res.set_body(String::new("Hello World"));
+}
+
+test "HTTP Server and Client" {
+    let server = Server::new(8081, handler);
+    
+    // Spawn server thread
+    Thread::spawn(fn() {
+        server.start();
+    });
+    
+    sleep_ms(100); // Wait for server to start
+    
+    let response = fetch(String::new("http://127.0.0.1:8081/hello"));
+    
+    assert_true(response.status == 200, "Status 200");
+    assert_true(!response.body.is_empty(), "Body not empty");
+    assert_true(response.body.eq_str("Hello World"), "Body content match");
+    
+    response.destroy();
+}

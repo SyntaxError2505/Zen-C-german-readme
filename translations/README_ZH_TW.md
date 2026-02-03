@@ -1169,7 +1169,7 @@ Zen C 包含一個涵蓋基本功能的標準庫 (`std`)。
 | **`std/result.zc`** | 錯誤處理 (`Ok`/`Err`)。 | [文檔](../docs/std/result.md) |
 | **`std/path.zc`** | 跨平台路徑操作。 | [文檔](../docs/std/path.md) |
 | **`std/env.zc`** | 進程環境變量。 | [文檔](../docs/std/env.md) |
-| **`std/net.zc`** | TCP 網絡 (套接字)。 | [文檔](../docs/std/net.md) |
+| **`std/net/`** | TCP, UDP, HTTP, DNS, URL. | [文檔](../docs/std/net.md) |
 | **`std/thread.zc`** | 線程與同步。 | [文檔](../docs/std/thread.md) |
 | **`std/time.zc`** | 時間測量與睡眠。 | [文檔](../docs/std/time.md) |
 | **`std/json.zc`** | JSON 解析與序列化。 | [文檔](../docs/std/json.md) |

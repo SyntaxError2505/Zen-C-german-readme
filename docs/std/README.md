@@ -1,17 +1,24 @@
 # Standard Library
 
+- [Crypto (SHA1)](./crypto.md) - Cryptographic primitives.
+- [CUDA](./cuda.md) - CUDA GPGPU operations.
+- [Encoding (Base64)](./encoding.md) - Data encoding utilities.
 - [Env (Environment)](./env.md) - Process environment variables.
 - [File System (FS)](./fs.md) - File I/O and directory operations.
 - [IO](./io.md) - Standard Input/Output.
+- [Iterator (Iter)](./iter.md) - Iterator traits.
 - [JSON](./json.md) - JSON parsing and serialization.
 - [Map](./map.md) - Hash map implementation.
-- [Networking (Net)](./net.md) - TCP networking.
+- [Memory (Mem)](./mem.md) - Allocators and memory traits (`Drop`, `Copy`).
+- [Networking (Net)](./net.md) - TCP, UDP, HTTP, DNS, and URL parsing.
 - [Option](./option.md) - Optional values (Some/None).
 - [Path](./path.md) - File path manipulation.
 - [Process](./process.md) - Process execution and management.
 - [Result](./result.md) - Error handling (Ok/Err).
+- [Regex](./regex.md) - Regular expressions.
 - [Queue](./queue.md) - FIFO queue (Ring Buffer).
 - [Set](./set.md) - Hash set implementation.
+- [Slice](./slice.md) - Array slicing.
 - [Stack](./stack.md) - LIFO stack.
 - [String](./string.md) - Growable, heap-allocated string type.
 - [Thread (Concurrency)](./thread.md) - Multithreading and synchronization.

@@ -94,6 +94,11 @@ impl String {
         return strcmp(self.c_str(), (*other).c_str()) == zero;
     }
 
+    fn eq_str(self, s: char*) -> bool {
+        let zero: c_int = 0;
+        return strcmp(self.c_str(), s) == zero;
+    }
+
     fn length(self) -> usize {
         if (self.vec.len == 0) { return 0; }
         return self.vec.len - 1;

@@ -1,0 +1,99 @@
+
+import "../core.zc"
+import "../result.zc"
+import "../string.zc"
+import "./socket.zc"
+
+struct TcpStream {
+    handle: c_int;
+}
+
+
+
+impl TcpStream {
+    fn read(self, buf: char*, len: usize) -> Result<usize> {
+        let n = read(self.handle - 1, (void*)buf, len);
+        if (n < 0) return Result<usize>::Err(strerror(errno));
+        return Result<usize>::Ok((usize)n);
+    }
+
+    fn read_exact(self, buf: char*, len: usize) -> Result<usize> {
+        let total_read: usize = 0;
+        while (total_read < len) {
+            let res = self.read(buf + total_read, len - total_read);
+            if (res.is_err()) return res;
+            let n = res.unwrap();
+            if (n == 0) return Result<usize>::Err("Unexpected EOF");
+            total_read = total_read + n;
+        }
+        return Result<usize>::Ok(total_read);
+    }
+    
+    fn write(self, buf: u8*, len: usize) -> Result<usize> {
+        let n: isize = _z_net_write(self.handle - 1, (char*)buf, len);
+        if (n < 0) return Result<usize>::Err("Write failed");
+        return Result<usize>::Ok((usize)n);
+    }
+    
+    fn close(self) {
+        if (self.handle > 0) {
+            close(self.handle - 1);
+            self.handle = 0;
+        }
+    }
+
+    fn connect(host: char*, port: c_int) -> Result<TcpStream> {
+        let fd = socket(Z_AF_INET, Z_SOCK_STREAM, 0);
+        if (fd < 0) return Result<TcpStream>::Err("Failed to create socket");
+        
+        let res = _z_net_connect(fd, host, port);
+        if (res == -1) { close(fd); return Result<TcpStream>::Err("Invalid address"); }
+        if (res == -2) { close(fd); return Result<TcpStream>::Err("Connection failed"); }
+        
+        return Result<TcpStream>::Ok(TcpStream { handle: fd + 1 });
+    }
+}
+
+impl Drop for TcpStream {
+    fn drop(self) {
+        self.close();
+    }
+}
+
+struct TcpListener {
+    handle: c_int;
+}
+
+impl TcpListener {
+    fn bind(host: char*, port: c_int) -> Result<TcpListener> {
+        let fd = socket(Z_AF_INET, Z_SOCK_STREAM, 0);
+        if (fd < 0) return Result<TcpListener>::Err("Failed to create socket");
+        
+        let res = _z_net_bind(fd, host, port);
+        
+        if (res == -1) { close(fd); return Result<TcpListener>::Err("Invalid address"); }
+        if (res == -2) { close(fd); return Result<TcpListener>::Err("Bind failed"); }
+        if (res == -3) { close(fd); return Result<TcpListener>::Err("Listen failed"); }
+        
+        return Result<TcpListener>::Ok(TcpListener { handle: fd + 1 });
+    }
+    
+    fn accept(self) -> Result<TcpStream> {
+        let client_fd = _z_net_accept(self.handle - 1);
+        if (client_fd < 0) return Result<TcpStream>::Err("Accept failed");
+        return Result<TcpStream>::Ok(TcpStream { handle: client_fd + 1 });
+    }
+    
+    fn close(self) {
+        if (self.handle > 0) {
+            close(self.handle - 1);
+            self.handle = 0;
+        }
+    }
+}
+
+impl Drop for TcpListener {
+    fn drop(self) {
+        self.close();
+    }
+}

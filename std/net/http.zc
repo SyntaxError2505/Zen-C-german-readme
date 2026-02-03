@@ -1,0 +1,356 @@
+
+import "../core.zc"
+import "../string.zc"
+import "./tcp.zc"
+import "../vec.zc"
+import "../map.zc"
+import "../mem.zc"
+
+struct Header {
+    key: String;
+    value: String;
+}
+
+extern fn snprintf(s: char*, maxlen: usize, format: const char*, ...) -> int;
+
+// Simple helper to parse headers
+fn _parse_headers(lines: Vec<String>, start_idx: usize) -> Vec<Header> {
+    let headers = Vec<Header>::new();
+    let len = lines.len;
+    for (let i = start_idx; i < len; i = i + 1) {
+        let line = lines.get(i);
+        if (line.is_empty()) break; // End of headers
+        
+        let parts = line.split(':');
+        if (parts.len >= 2) {
+            let key = parts.get(0);
+            let val = parts.get(1); // TODO: Join rest if multiple ':'?
+            // Trim
+            let key_t = key.trim();
+            let val_t = val.trim();
+            headers.push(Header { key: key_t, value: val_t });
+            
+            // Cleanup split parts (copies)
+            key.free();
+        }
+        // Free parts loop?
+        for (let j = 0; j < parts.len; j = j + 1) {
+            let p = parts.get(j);
+            p.free();
+        }
+        parts.free();
+    }
+    return headers;
+}
+
+struct Request {
+    method: String;
+    path: String;
+    headers: Vec<Header>;
+    body: String;
+}
+
+impl Request {
+    fn new(method: String, path: String) -> Request {
+        return Request {
+            method: method,
+            path: path,
+            headers: Vec<Header>::new(),
+            body: String::new("")
+        };
+    }
+    
+    fn destroy(self) {
+        self.method.free();
+        self.path.free();
+        
+        let len = self.headers.len;
+        for (let i = 0; i < len; i = i + 1) {
+            let h = self.headers.get(i);
+            h.key.free();
+            h.value.free();
+        }
+        self.headers.free();
+        self.body.free();
+    }
+}
+
+struct Response {
+    status: int;
+    headers: Vec<Header>;
+    body: String;
+}
+
+impl Response {
+    fn new(status: int) -> Response {
+        return Response {
+            status: status,
+            headers: Vec<Header>::new(),
+            body: String::new("")
+        };
+    }
+    
+    fn set_header(self, key: String, value: String) {
+        let h = Header { key: key, value: value };
+        self.headers.push(h);
+    }
+
+    fn set_header_str(self, key: char*, value: char*) {
+        self.headers.push(Header { 
+            key: String::new(key), 
+            value: String::new(value) 
+        });
+    }
+    
+    fn set_body(self, body: String) {
+        self.body.free();
+        self.body = body;
+    }
+
+    fn set_body_str(self, body: char*) {
+        self.body.free();
+        self.body = String::new(body);
+    }
+    
+    fn destroy(self) {
+        let len = self.headers.len;
+        for (let i = 0; i < len; i = i + 1) {
+            let h = self.headers.get(i);
+            h.key.free();
+            h.value.free();
+        }
+        self.headers.free();
+        self.body.free();
+    }
+}
+
+struct Server {
+    port: int;
+    handler: fn*(Request*, Response*);
+}
+
+impl Server {
+    fn new(port: int, handler: fn*(Request*, Response*)) -> Server {
+        return Server { port: port, handler: (void*)handler };
+    }
+
+    fn start(self) {
+        let host = "0.0.0.0";
+        
+        let listener_res = TcpListener::bind(host, self.port);
+        if (listener_res.is_err()) {
+             println "Failed to bind port {self.port}";
+             return;
+        }
+        
+        let listener = listener_res.unwrap();
+        println "Server listening on port {self.port}"; 
+        
+        while (true) {
+            let client_res = listener.accept();
+            if (client_res.is_err()) continue;
+            
+            let client = client_res.unwrap();
+            
+            // Read Request
+            let buf: char[4096];
+            let read_res = client.read(&buf[0], 4096);
+            if (read_res.is_ok()) {
+                let bytes_read = read_res.unwrap();
+                if (bytes_read > 0) {
+                     if (bytes_read < 4096) buf[bytes_read] = 0;
+                     else buf[4095] = 0;
+                     
+                     let req_str = String::new(&buf[0]);
+                     
+                     // Parse Request
+                     let lines = req_str.split('\n');
+                     if (lines.len > 0) {
+                         let first_line = lines.get(0);
+                         let fl_parts = first_line.split(' ');
+                         if (fl_parts.len >= 2) {
+                             let method = fl_parts.get(0).trim();
+                             let path = fl_parts.get(1).trim();
+                             
+                             let req = Request::new(method, path);
+                             let res = Response::new(200);
+                             
+                             // Call Handler
+                             let h_func: fn*(Request*, Response*) = self.handler;
+                             h_func(&req, &res);
+                             
+                             // Send Response
+                             let response_str = String::new("HTTP/1.1 ");
+                             // Status string
+                             if (res.status == 200) response_str.append_c("200 OK\r\n");
+                             else if (res.status == 404) response_str.append_c("404 Not Found\r\n");
+                             else response_str.append_c("500 Internal Server Error\r\n");
+                             
+                             // Headers
+                             for (let i = 0; i < res.headers.len; i = i + 1) {
+                                 let header = res.headers.get(i);
+                                 response_str.append(&header.key);
+                                 response_str.append_c(": ");
+                                 response_str.append(&header.value);
+                                 response_str.append_c("\r\n");
+                             }
+                             response_str.append_c("Content-Length: ");
+                             let len_buf: char[32];
+                             snprintf(len_buf, 32, "%zu", res.body.length());
+                             response_str.append_c(&len_buf[0]);
+                             
+                             response_str.append_c("\r\n"); // End Content-Length line
+                             response_str.append_c("\r\n"); // End of Headers section
+                             response_str.append(&res.body);
+                             
+                             client.write((u8*)response_str.c_str(), response_str.length());
+                             
+                             response_str.free();
+                             res.destroy();
+                             req.destroy();
+                             
+                             // Clean up fl_parts
+                             for(let k=0; k<fl_parts.len; k=k+1) fl_parts.get(k).free();
+                             fl_parts.free();
+                         }
+                         // Clean up lines
+                         for(let k=0; k<lines.len; k=k+1) lines.get(k).free();
+                         lines.free();
+                     }
+                     req_str.free();
+                }
+            }
+            client.close();
+        }
+    }
+}
+
+
+import "./url.zc"
+import "./dns.zc"
+
+extern fn atoi(s: const char*) -> int;
+
+fn fetch(url: String) -> Response {
+    let u_res = Url::parse(url);
+    if (u_res.is_err()) {
+        println "Invalid URL: {u_res.err}";
+        return Response::new(0);
+    }
+    
+    let u = u_res.unwrap();
+    
+    if (!u.scheme.eq_str("http")) {
+        println "Only http:// supported";
+        u.destroy();
+        return Response::new(0);
+    }
+    
+    // Resolve Host
+    let host_ip = String::new(u.host.c_str());
+    // Simple check if it's already an IP? 
+    // For now, let's try DNS resolve. 
+    // If it fails, maybe it is an IP or valid host that failing resolution?
+    // Actually Dns::resolve handles localhost and others.
+    
+    let dns_res = Dns::resolve(u.host.c_str());
+    if (dns_res.is_ok()) {
+        host_ip.free();
+        host_ip = dns_res.unwrap();
+    } 
+    // If DNS failed, we keep usage of u.host as is (maybe it is IP literal? Dns::resolve might fail on literals on some systems? 
+    // Actually getaddrinfo handles literals too if AI_NUMERICHOST or just standard behavior).
+    // Our Dns::resolve wrapper returns error if getaddrinfo fails.
+    // So if it fails, we trust the original string?
+    // Let's rely on Dns::resolve success for now, or fallback.
+    
+    let ip_str = host_ip.c_str();
+    
+    // Connect
+    let stream_res = TcpStream::connect(ip_str, u.port);
+    if (stream_res.is_err()) {
+        println "Failed to connect to {u.host.c_str()}:{u.port} ({ip_str})";
+        host_ip.free();
+        u.destroy();
+        return Response::new(0);
+    }
+    
+    let stream = stream_res.unwrap();
+    
+    // Send Request
+    let req_line = String::new("GET ");
+    
+    // Path should be "/" if empty? Url parser handles that.
+    req_line.append(&u.path);
+    if (!u.query.is_empty()) {
+        req_line.append_c("?");
+        req_line.append(&u.query);
+    }
+    
+    req_line.append_c(" HTTP/1.1\r\nHost: ");
+    req_line.append(&u.host);
+    req_line.append_c("\r\nConnection: close\r\n\r\n");
+    
+    stream.write((u8*)req_line.c_str(), req_line.length());
+    req_line.free();
+    host_ip.free();
+    u.destroy();
+    
+
+    
+    // Read Response
+    let buf: char[4096];
+    let n_res = stream.read(&buf[0], 4096);
+    
+    if (n_res.is_err()) {
+        stream.close();
+        return Response::new(0);
+    }
+    
+    let n = n_res.unwrap();
+    if (n == 0) {
+        stream.close();
+        return Response::new(0);
+    }
+    
+    // Null terminate
+    if (n < 4096) buf[n] = 0; else buf[4095] = 0;
+    
+    let raw_res = String::new(&buf[0]);
+    
+    // Parse Status Line
+    let first_space = raw_res.find(' ');
+    let status = 0;
+    
+    if (first_space.is_some()) {
+        let fs = first_space.unwrap();
+        let rest_line = raw_res.substring(fs + 1, raw_res.length() - fs - 1);
+        let second_space = rest_line.find(' ');
+        if (second_space.is_some()) {
+            let ss = second_space.unwrap();
+            let code_str = rest_line.substring(0, ss);
+            status = atoi(code_str.c_str());
+            code_str.free();
+        } else {
+             status = atoi(rest_line.c_str());
+        }
+        rest_line.free();
+    }
+    
+    let res = Response::new(status);
+    
+    // Split body
+    let body_sep = "\r\n\r\n";
+    let body_ptr = strstr(raw_res.c_str(), body_sep);
+    if (body_ptr != NULL) {
+        let body_offset = (usize)(body_ptr - raw_res.c_str());
+        let body_start = body_offset + 4;
+        let body_content = raw_res.substring(body_start, raw_res.length() - body_start);
+        res.set_body(body_content);
+    }
+    
+    raw_res.free();
+    stream.close();
+    
+    return res;
+}

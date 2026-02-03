@@ -1,6 +1,6 @@
 <div align="center">
 
-[English](../README.md) • [简体中文](README_ZH_CN.md) • [繁體中文](README_ZH_TW.md) • [Español](README_ES.md) • [Italiano](README_IT.md) • [Português Brasileiro](README_PT_BR.md)
+[English](../README.md) • [Русский](README_RU.md) • [简体中文](README_ZH_CN.md) • [繁體中文](README_ZH_TW.md) • [Español](README_ES.md) • [Italiano](README_IT.md) • [Português Brasileiro](README_PT_BR.md)
 
 </div>
 
@@ -1173,7 +1173,7 @@ O Zen C inclui a biblioteca padrão (`std`), que cobre as funcionalidades essenc
 | **`std/result.zc`** | Error handling (`Ok`/`Err`). | [Docs](../docs/std/result.md) |
 | **`std/path.zc`** | Cross-platform path manipulation. | [Docs](../docs/std/path.md) |
 | **`std/env.zc`** | Process environment variables. | [Docs](../docs/std/env.md) |
-| **`std/net.zc`** | TCP networking (Sockets). | [Docs](../docs/std/net.md) |
+| **`std/net/`** | TCP, UDP, HTTP, DNS, URL. | [Docs](../docs/std/net.md) |
 | **`std/thread.zc`** | Threads and Synchronization. | [Docs](../docs/std/thread.md) |
 | **`std/time.zc`** | Time measurement and sleep. | [Docs](../docs/std/time.md) |
 | **`std/json.zc`** | JSON parsing and serialization. | [Docs](../docs/std/json.md) |

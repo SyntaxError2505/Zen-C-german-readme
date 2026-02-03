@@ -1,7 +1,7 @@
 
 //> link: -lpthread
 
-import "std/net.zc"
+import "std/net/tcp.zc"
 import "std/fs.zc"
 import "std/thread.zc"
 import "std/result.zc"
