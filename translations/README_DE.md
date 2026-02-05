@@ -28,9 +28,9 @@
 
 ## Community
 
-Join the discussion, share demos, ask questions, or report bugs in the official Zen C Discord server!
+Trete der Discussion bei, teile Demos, frage Fragen oder zeige uns Fehler im offizielen Zen C Discord Server!
 
-- Discord: [Join here](https://discord.com/invite/q6wEsCmkJP)
+- Discord: [Tritt hier bei](https://discord.com/invite/q6wEsCmkJP)
 
 ---
 
