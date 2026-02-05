@@ -1,7 +1,7 @@
 
 <div align="center">
 
-[English](README.md) • [Русский](translations/README_RU.md) • [简体中文](translations/README_ZH_CN.md) • [繁體中文](translations/README_ZH_TW.md) • [Español](translations/README_ES.md) • [Italiano](translations/README_IT.md) • [Português Brasileiro](translations/README_PT_BR.md)
+[English](README.md) • [Русский](translations/README_RU.md) • [简体中文](translations/README_ZH_CN.md) • [繁體中文](translations/README_ZH_TW.md) • [Español](translations/README_ES.md) • [Italiano](translations/README_IT.md) • [Português Brasileiro](translations/README_PT_BR.md) • [Deutsch](translations/README_DE.md)
 
 </div>
 
