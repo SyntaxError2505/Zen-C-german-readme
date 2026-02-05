@@ -266,6 +266,12 @@ let (sum, diff) = add_and_subtract(3, 2);
 // sum = 5, diff = 1
 ```
 
+带类型的解构允许显式类型注解：
+```zc
+let (a: string, b: u8) = ("hello", 42);
+let (x, y: i32) = (1, 2);  // 混合：x 推断，y 显式
+```
+
 #### 结构体
 带有可选位域的数据结构。
 ```zc

@@ -911,7 +911,15 @@ void codegen_node_single(ParserContext *ctx, ASTNode *node, FILE *out)
                 }
                 else
                 {
-                    if (strstr(g_config.cc, "tcc"))
+                    // Tuple destructuring: access .v0, .v1, etc.
+                    char *explicit_type = node->destruct.types ? node->destruct.types[i] : NULL;
+                    if (explicit_type)
+                    {
+                        // Use explicit type annotation
+                        fprintf(out, "    %s %s = _tmp_%d.v%d;\n", explicit_type,
+                                node->destruct.names[i], id, i);
+                    }
+                    else if (strstr(g_config.cc, "tcc"))
                     {
                         fprintf(out, "    __typeof__(_tmp_%d.v%d) %s = _tmp_%d.v%d;\n", id, i,
                                 node->destruct.names[i], id, i);

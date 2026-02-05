@@ -268,6 +268,12 @@ let (somma, differenza) = somma_e_differenza(3, 2);
 // somma = 5, differenza = 1
 ```
 
+La separazione delle tuple tipizzata permette annotazioni di tipo esplicite:
+```zc
+let (a: string, b: u8) = ("hello", 42);
+let (x, y: i32) = (1, 2);  // Misto: x inferito, y esplicito
+```
+
 #### Structs
 Strutture dati con campi di bit opzionali.
 ```zc

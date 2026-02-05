@@ -266,6 +266,12 @@ let (suma, resta) = sumar_y_restar(3, 2);
 // suma = 5, resta = 1
 ```
 
+La desestructuración tipada permite anotaciones de tipo explícitas:
+```zc
+let (a: string, b: u8) = ("hello", 42);
+let (x, y: i32) = (1, 2);  // Mixto: x inferido, y explícito
+```
+
 #### Structs
 Estructuras de datos con campos de bits opcionales.
 ```zc

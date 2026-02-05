@@ -267,6 +267,12 @@ let (sum, diff) = add_and_subtract(3, 2);
 // sum = 5, diff = 1
 ```
 
+Typed tuple destructuring allows explicit type annotations:
+```zc
+let (a: string, b: u8) = ("hello", 42);
+let (x, y: i32) = (1, 2);  // Mixed: x inferred, y explicit
+```
+
 #### Structs
 Data structures with optional bitfields.
 ```zc

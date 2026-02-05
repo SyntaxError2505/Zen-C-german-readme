@@ -266,6 +266,12 @@ let (sum, diff) = add_and_subtract(3, 2);
 // sum = 5, diff = 1
 ```
 
+帶類型的解構允許顯式類型注解：
+```zc
+let (a: string, b: u8) = ("hello", 42);
+let (x, y: i32) = (1, 2);  // 混合：x 推斷，y 顯式
+```
+
 #### 結構體
 帶有可選位域的數據結構。
 ```zc

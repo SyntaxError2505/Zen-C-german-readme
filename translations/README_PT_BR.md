@@ -258,6 +258,12 @@ let (sum, diff) = add_and_subtract(3, 2);
 // sum = 5, diff = 1
 ```
 
+Desestruturação tipada permite anotações de tipo explícitas:
+```zc
+let (a: string, b: u8) = ("hello", 42);
+let (x, y: i32) = (1, 2);  // Misto: x inferido, y explícito
+```
+
 #### Structs
 
 Estruturas de dados com campos de bit opcionais.
