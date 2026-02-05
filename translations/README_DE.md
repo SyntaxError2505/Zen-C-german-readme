@@ -36,7 +36,7 @@ Trete der Discussion bei, teile Demos, frage Fragen oder zeige uns Fehler im off
 
 ## Index
 
-- [Overview](#overview)
+- [Übersicht](#overview)
 - [Community](#community)
 - [Quick Start](#quick-start)
     - [Installation](#installation)
@@ -117,7 +117,7 @@ Trete der Discussion bei, teile Demos, frage Fragen oder zeige uns Fehler im off
 
 ---
 
-## Quick Start
+## Schnellstart
 
 ### Installation
 
@@ -128,26 +128,27 @@ make
 sudo make install
 ```
 
-### Portable Build (APE)
+### Tragbarer Build (APE)
 
 Zen C can be compiled as an **Actually Portable Executable (APE)** using [Cosmopolitan Libc](https://github.com/jart/cosmopolitan). This produces a single binary (`.com`) that runs natively on Linux, macOS, Windows, FreeBSD, OpenBSD, and NetBSD on both x86_64 and aarch64 architectures.
+Zen C kann durch [Cosmopolitan Libc](https://github.com/jart/cosmopolitan) als ein **Actually Portable Executable (APE)** compiliert werden. Dies produziert eine Binärdatei (`.com`) die nativ auf Lunux, macOS, Windows, FreeBSD, OpenBSD und NetBSD auf x86_64 und aarch64 architecturen läuft.
 
-**Prerequisites:**
-- `cosmocc` toolchain (must be in your PATH)
+**Nötige Packete:**
+- `cosmocc` toolchain (muss in deinem PATH sein)
 
-**Build & Install:**
+**Build & Installation:**
 ```bash
 make ape
 sudo env "PATH=$PATH" make install-ape
 ```
 
-**Artifacts:**
-- `out/bin/zc.com`: The portable Zen-C compiler. Includes the standard library embedded within the executable.
-- `out/bin/zc-boot.com`: A self-contained bootstrap installer for setting up new Zen-C projects.
+**Artifakte:**
+- `out/bin/zc.com`: Der tragbare Zen-C compiler. Beinhaltet die standard Bibliothek in der Ausführbaren Datei;
+- `out/bin/zc-boot.com`: Ein sich selbst beinhaltender bootstrap Installer für den Setup von neuen Zen-C projekten.
 
-**Usage:**
+**Nutzung:**
 ```bash
-# Run on any supported OS
+# Ausführen auf jedem erlaubtem OS
 ./out/bin/zc.com build hello.zc -o hello
 ```
 
