@@ -247,20 +247,20 @@ let x = pair.0;  // 1
 let s = pair.1;  // "Guten Tag"
 ```
 
-**Multiple Return Values**
+**Mehrere return-Werte**
 
-Functions can return tuples to provide multiple results:
+Functionen können Tuples zurückgeben um wie mehrere Return Values zu funktionieren:
 ```zc
-fn add_and_subtract(a: int, b: int) -> (int, int) {
+fn add_und_differenz(a: int, b: int) -> (int, int) {
     return (a + b, a - b);
 }
 
-let result = add_and_subtract(3, 2);
-let sum = result.0;   // 5
-let diff = result.1;  // 1
+let rueckgabe = add_und_differenz(3, 2);
+let summe = rueckgabe.0;   // 5
+let differenz = rueckgabe.1;  // 1
 ```
 
-**Destructuring**
+**Destrukturierung**
 
 Tuples can be destructured directly into variables:
 ```zc
