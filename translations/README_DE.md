@@ -179,11 +179,9 @@ export ZC_ROOT=/path/to/Zen-C
 
 ### 1. Variablen und Konstanten
 
-Zen C distinguishes between compile-time constants and runtime variables.
 Zen C unterscheidet zwishcen compile-time Konstanten und runtime Variablen.
 
 #### Manifest Konstanten (`def`)
-Values that exist only at compile-time (folded into code). Use these for array sizes, fixed configuration, and magic numbers.
 Werte welche nur bei compile-time existieren (welche for dem Kompilieren in den Code eingebackt werden). Nutzt diese für z.b. Array-Größen, statische Configs und magische Zahlen
 
 ```zc
@@ -195,14 +193,14 @@ let buffer: char[MAX_GROESSE]; // Valid array size
 Lager in Arbeitspeicher. Kann konstant oder read-only sein (`const`).
 
 ```zc
-let x = 10;             // Mutable
+let x = 10;             // Veränderbar
 x = 20;                 // OK
 
-let y: const int = 10;  // Read-only (Type qualified)
-// y = 20;              // Error: cannot assign to const
+let y: const int = 10;  // Read-only (Typ qualifiziert)
+// y = 20;              // Fehler, kann nicht verändert werden
 ```
 
-> **Type Inference**: Zen C automatically infers types for initialized variables. It compiles to C23 `auto` on supported compilers, or GCC's `__auto_type` extension otherwise.
+> **Typinferenz**: Zen C rät automatisch welchem typ ein Wert zugehört. Auf modernen Compilern compiliert es zu C23 `auto`, oder GCC's `__auto_type` extention.
 
 ### 2. Primitive Types
 
