@@ -262,27 +262,27 @@ let differenz = rueckgabe.1;  // 1
 
 **Destrukturierung**
 
-Tuples can be destructured directly into variables:
+Tuples können direkt zu Variablen destrukturiert werden:
 ```zc
-let (sum, diff) = add_and_subtract(3, 2);
+let (sum, diff) = add_und_differenz(3, 2);
 // sum = 5, diff = 1
 ```
 
-Typed tuple destructuring allows explicit type annotations:
+Getypte tuple-Destrukturierung erlaubt explicite Type:
 ```zc
-let (a: string, b: u8) = ("hello", 42);
-let (x, y: i32) = (1, 2);  // Mixed: x inferred, y explicit
+let (a: string, b: u8) = ("moin", 42);
+let (x, y: i32) = (1, 2);  // Mixed: x geraten, y explizit
 ```
 
 #### Structs
-Data structures with optional bitfields.
+Datenstrukturen mit optionalen bitfields.
 ```zc
 struct Point {
     x: int;
     y: int;
 }
 
-// Struct initialization
+// Struct initialisation
 let p = Point { x: 10, y: 20 };
 
 // Bitfields
@@ -292,7 +292,7 @@ struct Flags {
 }
 ```
 
-> **Note**: Structs use [Move Semantics](#move-semantics--copy-safety) by default. Fields can be accessed via `.` even on pointers (Auto-Dereference).
+> **Notiz**: Structs nutzen normalerweise [Move Semantics](#move-semantics--copy-safety). Fields können sogar in pointers mit `.` referenciert werden (Auto-Dereference).
 
 #### Opaque Structs
 You can define a struct as `opaque` to restrict access to its fields to the defining module only, while still allowing the struct to be allocated on the stack (size is known).
