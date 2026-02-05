@@ -731,9 +731,9 @@ impl Point {
         return sqrt(self.x * self.x + self.y * self.y);
     }
 }
+```
 
 #### Primitive Methods
-
 Zen C allows you to define methods on primitive types (like `int`, `bool`, etc.) using the same `impl` syntax.
 
 ```zc
@@ -746,23 +746,6 @@ impl int {
 let x = -10;
 let y = x.abs(); // 10
 let z = (-5).abs(); // 5 (Literals supported)
-```
-
-#### Primitive Methods
-
-Zen C allows you to define methods on primitive types (like `int`, `bool`, etc.) using the same `impl` syntax.
-
-```zc
-impl int {
-    fn abs(self) -> int {
-        return *self < 0 ? -(*self) : *self;
-    }
-}
-
-let x = -10;
-let y = x.abs(); // 10
-let z = (-5).abs(); // 5 (Literals supported)
-```
 ```
 
 #### Traits

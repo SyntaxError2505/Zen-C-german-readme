@@ -726,10 +726,10 @@ impl Punto {
         return sqrt(self.x * self.x + self.y * self.y);
     }
 }
+```
 
-#### Primitive Methods
-
-Zen C allows you to define methods on primitive types (like `int`, `bool`, etc.) using the same `impl` syntax.
+#### Métodos primitivos
+Zen C permette di definire metodi su tipi primitivi (come `int`, `bool`, etc.) usando la stessa sintassi `impl`.
 
 ```zc
 impl int {
@@ -741,7 +741,6 @@ impl int {
 let x = -10;
 let y = x.abs(); // 10
 let z = (-5).abs(); // 5 (Literals supported)
-```
 ```
 
 #### Tratti
