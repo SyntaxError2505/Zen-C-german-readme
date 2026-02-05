@@ -152,22 +152,22 @@ sudo env "PATH=$PATH" make install-ape
 ./out/bin/zc.com build hello.zc -o hello
 ```
 
-### Usage
+### Nutzung
 
 ```bash
-# Compile and run
+# Compilieren und Ausführen
 zc run hello.zc
 
-# Build executable
+# Compiliere eine Ausführbare Datei
 zc build hello.zc -o hello
 
-# Interactive Shell
+# Interaktieve Shell
 zc repl
 ```
 
-### Environment Variables
+### Umgebungsvariablen
 
-You can set `ZC_ROOT` to specify the location of the Standard Library (standard imports like `import "std/vec.zc"`). This allows you to run `zc` from any directory.
+Du kannst `ZC_ROOT` einstellen um den Pfad zur Standard Bibliothek zu specifizieren (Standard Bibliothek wird importiert mit z.b. `import "std/vec.zc"`). Dies erlaubt `zc` aus allen Plätzen auszuführen.
 
 ```bash
 export ZC_ROOT=/path/to/Zen-C
@@ -175,22 +175,24 @@ export ZC_ROOT=/path/to/Zen-C
 
 ---
 
-## Language Reference
+## Sprachreferenz
 
-### 1. Variables and Constants
+### 1. Variablen und Konstanten
 
 Zen C distinguishes between compile-time constants and runtime variables.
+Zen C unterscheidet zwishcen compile-time Konstanten und runtime Variablen.
 
-#### Manifest Constants (`def`)
+#### Manifest Konstanten (`def`)
 Values that exist only at compile-time (folded into code). Use these for array sizes, fixed configuration, and magic numbers.
+Werte welche nur bei compile-time existieren (welche for dem Kompilieren in den Code eingebackt werden). Nutzt diese für z.b. Array-Größen, statische Configs und magische Zahlen
 
 ```zc
-def MAX_SIZE = 1024;
-let buffer: char[MAX_SIZE]; // Valid array size
+def MAX_GROESSE = 1024;
+let buffer: char[MAX_GROESSE]; // Valid array size
 ```
 
-#### Variables (`let`)
-Storage locations in memory. Can be mutable or read-only (`const`).
+#### Variablen (`let`)
+Lager in Arbeitspeicher. Kann konstant oder read-only sein (`const`).
 
 ```zc
 let x = 10;             // Mutable
