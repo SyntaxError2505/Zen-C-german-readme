@@ -202,9 +202,9 @@ let y: const int = 10;  // Read-only (Typ qualifiziert)
 
 > **Typinferenz**: Zen C rät automatisch welchem typ ein Wert zugehört. Auf modernen Compilern compiliert es zu C23 `auto`, oder GCC's `__auto_type` extention.
 
-### 2. Primitive Types
+### 2. Primitive Typen
 
-| Type | C Equivalent | Description |
+| Type | C Equivalent | Beschreibung |
 |:---|:---|:---|
 | `int`, `uint` | `int32_t`, `uint32_t` | 32-bit signed/unsigned integer |
 | `c_char`, `c_uchar` | `char`, `unsigned char` | C char / unsigned char (Interop) |
@@ -213,9 +213,9 @@ let y: const int = 10;  // Read-only (Typ qualifiziert)
 | `c_long`, `c_ulong` | `long`, `unsigned long` | C long / unsigned long (Interop) |
 | `I8` .. `I128` or `i8` .. `i128` | `int8_t` .. `__int128_t` | Signed fixed-width integers |
 | `U8` .. `U128` or `u8` .. `u128` | `uint8_t` .. `__uint128_t` | Unsigned fixed-width integers |
-| `isize`, `usize` | `ptrdiff_t`, `size_t` | Pointer-sized integers |
+| `isize`, `usize` | `ptrdiff_t`, `size_t` | Integer mit Pointer-größe |
 | `byte` | `uint8_t` | Alias for U8 |
-| `F32`, `F64` or `f32`, `f64`  | `float`, `double` | Floating point numbers |
+| `F32`, `F64` or `f32`, `f64`  | `float`, `double` | Dezimalbrüche |
 | `bool` | `bool` | `true` or `false` |
 | `char` | `char` | Single character |
 | `string` | `char*` | C-string (null-terminated) |
@@ -223,16 +223,16 @@ let y: const int = 10;  // Read-only (Typ qualifiziert)
 | `iN` (for example, `i256`) | `_BitInt(N)` | Arbitrary bit-width signed integer (C23) |
 | `uN` (for example, `u42`) | `unsigned _BitInt(N)` | Arbitrary bit-width unsigned integer (C23) |
 
-> **Best Practices for Portable Code**
+> **Beste denkweise bei Tragbaren programmen**
 >
-> - Use **Portable Types** (`int`, `uint`, `i64`, `u8`, etc.) for all pure Zen C logic. `int` is guaranteed to be 32-bit signed on all architectures.
-> - Use **C Interop Types** (`c_int`, `c_char`, `c_long`) **only** when interacting with C libraries (FFI). Their size varies by platform and C compiler (e.g. `c_long` size differs between Windows and Linux).
-> - Use `isize` and `usize` for array indexing and memory pointer arithmetic.
+> - Nutzt **Tragbare Typen** (`int`, `uint`, `i64`, `u8`, etc.) für pure Zen C logik. `int` garrantiert überall 32-bit signed zu sein.
+> - Nutze **C Interop Types** (`c_int`, `c_char`, `c_long`) **nur** wenn mit C Bibliotheken interregiert wird (FFI). Ihre größe varriert je nach Architectur und Compiler (z.b. `c_long` hat verschiedene Größen zwischen Linux und Windows).
+> - Nutze `isize` und `usize` für array indexing und RAM pointer Arithmetik.
 
-### 3. Aggregate Types
+### 3. Mehrwertige Typen
 
 #### Arrays
-Fixed-size arrays with value semantics.
+Arrays mit fixierter größe
 ```zc
 def SIZE = 5;
 let ints: int[SIZE] = [1, 2, 3, 4, 5];
@@ -240,11 +240,11 @@ let zeros: [int; SIZE]; // Zero-initialized
 ```
 
 #### Tuples
-Group multiple values together, access elements by index.
+Gruppiere mehrere Werte und sehe sie mit dem Index
 ```zc
-let pair = (1, "Hello");
+let pair = (1, "Guten Tag");
 let x = pair.0;  // 1
-let s = pair.1;  // "Hello"
+let s = pair.1;  // "Guten Tag"
 ```
 
 **Multiple Return Values**
