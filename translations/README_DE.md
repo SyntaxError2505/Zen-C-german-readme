@@ -22,9 +22,8 @@
 
 ---
 
-## Overview
+## Übersicht
 
-**Zen C** is a modern systems programming language that compiles to human-readable `GNU C`/`C11`. It provides a rich feature set including type inference, pattern matching, generics, traits, async/await, and manual memory management with RAII capabilities, all while maintaining 100% C ABI compatibility.
 **Zen C** ist eine Systemprogramierungssprache die zu von menschen lesbarem `GNU C`/`C11` compiliert. Sie stellt ein reiches feature set mit z.b. type inference, pattern matching, generics, traits, async/await und manueles memory managment mit RAII möglichkeiten. Das alles während sie 100% compatibel mit der C ABI ist.
 
 ## Community
