@@ -422,16 +422,16 @@ let double = x -> x * factor;  // Arrow syntax
 let full = fn(x: int) -> int { return x * factor; }; // Block syntax
 ```
 
-#### Raw Function Pointers
-Zen C supports raw C function pointers using the `fn*` syntax. This allows seamless interop with C libraries that expect function pointers without closure overhead.
+#### Functionpointer
+Zen C unterschtützt C Funktionspointer mit dem `fn*` Syntax. Dies erlaubt Interoperation mit C Bibliotheken die Funktionspointer erwarten.
 
 ```zc
-// Function taking a raw function pointer
+// Funktion erwartett einen Funktionspointer
 fn set_callback(cb: fn*(int)) {
     cb(42);
 }
 
-// Function returning a raw function pointer
+// Funktion gibt Funktionspointer zurück
 fn get_callback() -> fn*(int) {
     return my_handler;
 }
@@ -440,55 +440,55 @@ fn get_callback() -> fn*(int) {
 let pptr: fn**(int) = &ptr;
 ```
 
-#### Variadic Functions
-Functions can accept a variable number of arguments using `...` and the `va_list` type.
+#### Variadische Funktionen
+Funktionen können eine variierende Anzahl an Argumenten akzeptieren durch `...` und den `va_list` Typ.
 ```zc
 fn log(lvl: int, fmt: char*, ...) {
     let ap: va_list;
     va_start(ap, fmt);
-    vprintf(fmt, ap); // Use C stdio
+    vprintf(fmt, ap); // Nutzt C stdio
     va_end(ap);
 }
 ```
 
-### 5. Control Flow
+### 5. Kontrollfluss
 
-#### Conditionals
+#### Konditionale Abfragen
 ```zc
 if x > 10 {
-    print("Large");
+    print("Groß");
 } else if x > 5 {
     print("Medium");
 } else {
-    print("Small");
+    print("Klein");
 }
 
 // Ternary
 let y = x > 10 ? 1 : 0;
 
-// If-Expression (for complex conditions)
+// If-Expression (für komplexe Konditionen)
 let category = if (x > 100) { "huge" } else if (x > 10) { "large" } else { "small" };
 ```
 
 #### Pattern Matching
-Powerful alternative to `switch`.
+Kräftige alternative zu `switch`.
 ```zc
 match val {
-    1         => { print "One" },
-    2 || 3    => { print "Two or Three" },    // OR with ||
-    4 or 5    => { print "Four or Five" },    // OR with 'or'
-    6, 7, 8   => { print "Six to Eight" },    // OR with comma
-    10 .. 15  => { print "10 to 14" },        // Exclusive range (Legacy)
-    10 ..< 15 => { print "10 to 14" },        // Exclusive range (Explicit)
-    20 ..= 25 => { print "20 to 25" },        // Inclusive range
-    _         => { print "Other" },
+    1         => { print "Eins" },
+    2 || 3    => { print "Zwei oder Drei" },    // oder mit ||
+    4 or 5    => { print "Vier oder Fünf" },    // oder mit 'or'
+    6, 7, 8   => { print "Sechs zu acht" },    // OR mit Komma
+    10 .. 15  => { print "10 zu 14" },        // Exclusiver Bereich (Legacy)
+    10 ..< 15 => { print "10 zu 14" },        // Exclusiver Bereich (Explicit)
+    20 ..= 25 => { print "20 zu 25" },        // Inclusiver Bereich
+    _         => { print "Anderes" },
 }
 
-// Destructuring Enums
-match shape {
-    Shape::Circle(r)   => { println "Radius: {r}" },
-    Shape::Rect(w, h)  => { println "Area: {w*h}" },
-    Shape::Point       => { println "Point" },
+// Destrukturierung von Enums
+match Form {
+    Form::Circle(r)   => { println "Radius: {r}" },
+    Form::Rect(w, h)  => { println "Area: {w*h}" },
+    Form::Point       => { println "Point" },
 }
 ```
 
@@ -552,10 +552,10 @@ Zen C supports operator overloading for user-defined structs by implementing spe
 
 #### Overloadable Operators
 
-| Category | Operator | Method Name |
+| Kategorie | Operator | Methodenname |
 |:---|:---|:---|
-| **Arithmetic** | `+`, `-`, `*`, `/`, `%` | `add`, `sub`, `mul`, `div`, `rem` |
-| **Comparison** | `==`, `!=` | `eq`, `neq` |
+| **Arithmetisch** | `+`, `-`, `*`, `/`, `%` | `add`, `sub`, `mul`, `div`, `rem` |
+| **Vergleich** | `==`, `!=` | `eq`, `neq` |
 | | `<`, `>`, `<=`, `>=` | `lt`, `gt`, `le`, `ge` |
 | **Bitwise** | `&`, `\|`, `^` | `bitand`, `bitor`, `bitxor` |
 | | `<<`, `>>` | `shl`, `shr` |
