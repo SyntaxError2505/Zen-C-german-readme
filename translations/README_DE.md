@@ -295,7 +295,7 @@ struct Flags {
 > **Notiz**: Structs nutzen normalerweise [Move Semantics](#move-semantics--copy-safety). Fields können sogar in pointers mit `.` referenciert werden (Auto-Dereference).
 
 #### Opaque Structs
-You can define a struct as `opaque` to restrict access to its fields to the defining module only, while still allowing the struct to be allocated on the stack (size is known).
+Man kann einen struct als `opaque` definieren um die Nutzung seiner Felder zu dem definierendem Modul zu limitieren während die Allocation des Structs (bekannte Größe) auf dem Stack erlaubt ist.
 
 ```zc
 // In user.zc
@@ -318,17 +318,17 @@ fn main() {
 ```
 
 #### Enums
-Tagged unions (Sum types) capable of holding data.
+Gettagte unions (Sum typen) können Daten halten.
 ```zc
 enum Shape {
-    Circle(float),      // Holds radius
-    Rect(float, float), // Holds width, height
-    Point               // No data
+    Kreis(float),      // Hätlt Radius
+    Rechteck(float, float), // Hält Breite , Höhe
+    Punkt            // No data
 }
 ```
 
 #### Unions
-Standard C unions (unsafe access).
+Standard C unions (Unsichere nutzung).
 ```zc
 union Data {
     i: int;
@@ -336,8 +336,8 @@ union Data {
 }
 ```
 
-#### Type Aliases
-Create a new name for an existing type.
+#### Typ Alias
+Erstelle einen neuen Typ für eine existierenden Typ.
 ```zc
 alias ID = int;
 alias PointMap = Map<string, Point>;
