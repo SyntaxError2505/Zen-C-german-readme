@@ -588,33 +588,33 @@ Diese Operatoren sind built-in Sprachfeatures und können nicht direkt überlade
 | Operator | Name | Beschreibung |
 |:---|:---|:---|
 | `\|>` | Pipeline | `x \|> f(y)` wird zu `f(x, y)` |
-| `??` | Null Coalescing | `val ?? default` returns `default` if `val` is NULL (pointers) |
-| `??=` | Null Assignment | `val ??= init` assigns if `val` is NULL |
-| `?.` | Safe Navigation | `ptr?.field` accesses field only if `ptr` is not NULL |
-| `?` | Try Operator | `res?` returns error if present (Result/Option types) |
+| `??` | Null Coalescing | `val ?? default` gibt `default` wenn `val` NULL ist (Zeiger) |
+| `??=` | Null Zuweisung | `val ??= init` wird zugewiesen wenn `val` NULL ist |
+| `?.` | Sichere Navigation | `ptr?.field` nutzt field nur wenn `ptr` nicht NULL ist |
+| `?` | Try Operator | `res?` gibt Fehler wenn es nicht existert (Result/Option Typen) |
 
-**Auto-Dereference**:
-Pointer field access (`ptr.field`) and method calls (`ptr.method()`) automatically dereference the pointer, equivalent to `(*ptr).field`.
+**Auto-Dereferenzierung**:
+Zeiger Field zugang (`ptr.field`) und Methoden calls (`ptr.method()`) dereferenziert automatisch den Zeiger, equivalent zu `(*ptr)field`.
 
-### 7. Printing and String Interpolation
+### 7. Printing und String Inderpolation
 
-Zen C provides versatile options for printing to the console, including keywords and concise shorthands.
+Zen C stellt mehrere optionen zum Drucken zur Konsole zur Verfügung. Diese beinhalten keywords und shorthands.
 
 #### Keywords
 
-- `print "text"`: Prints to `stdout` without a trailing newline.
-- `println "text"`: Prints to `stdout` with a trailing newline.
-- `eprint "text"`: Prints to `stderr` without a trailing newline.
-- `eprintln "text"`: Prints to `stderr` with a trailing newline.
+- `print "text"`: Druckt zu `stdout` ohne eine neue Zeile.
+- `println "text"`: Druckt zu `stdout` mit einer neuen Zeile. 
+- `eprint "text"`: Druckt zu `stderr` ohne eine neue Zeile.
+- `eprintln "text"`: Druckt zu `stderr` mit einer neuen Zeile. 
 
 #### Shorthands
 
-Zen C allows you to use string literals directly as statements for quick printing:
+Zen C erlaubt dir String Literals als Statements zu drucken:
 
-- `"Hello World"`: Equivalent to `println "Hello World"`. (Implicitly adds newline)
-- `"Hello World"..`: Equivalent to `print "Hello World"`. (No trailing newline)
-- `!"Error"`: Equivalent to `eprintln "Error"`. (Output to stderr)
-- `!"Error"..`: Equivalent to `eprint "Error"`. (Output to stderr, no newline)
+- `"Hello World"`: ist equivalent zu `println "Hello World"`. (Neue Zeile)
+- `"Hello World"..`: ist equivalent zu `print "Hello World"`. (Keien neue Zeile)
+- `!"Error"`: ist equivalent zu `eprintln "Error"`. (Output zu stderr)
+- `!"Error"..`: ist equivalent zu `eprint "Error"`. (Output zu stderr, keine neue Zeile)
 
 #### String Interpolation (F-strings)
 
