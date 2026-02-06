@@ -343,28 +343,28 @@ alias ID = int;
 alias PointMap = Map<string, Point>;
 ```
 
-#### Opaque Type Aliases
-You can define a type alias as `opaque` to create a new type that is distinct from its underlying type outside of the defining module. This provides strong encapsulation and type safety without the runtime overhead of a wrapper struct.
+#### Opaque Typ Alias
+Man kann einen Typ Alias als `opaque` definieren um einen neuen Typ zu erstellen der sich unterscheidet im unterliegendem Typ. Dies stellt eine starke Encapsulation und Typ-Sicherheit ohne den overhead eines Wrapper-Structs.
 
 ```zc
 // In library.zc
 opaque alias Handle = int;
 
-fn make_handle(v: int) -> Handle {
-    return v; // Implicit conversion allowed inside module
+fn erstell_handle(v: int) -> Handle {
+    return v; // Implicite conversion im Modul erlaubt
 }
 
 // In main.zc
 import "library.zc";
 
 fn main() {
-    let h: Handle = make_handle(42);
-    // let i: int = h; // Error: Type validation failed
-    // let h2: Handle = 10; // Error: Type validation failed
+    let h: Handle = erstell_handle(42);
+    // let i: int = h; // Fehler: Type validation failed
+    // let h2: Handle = 10; // Fehler: Type validation failed
 }
 ```
 
-### 4. Functions & Lambdas
+### 4. Functionen und Lambdas
 
 #### Functions
 ```zc
@@ -372,18 +372,18 @@ fn add(a: int, b: int) -> int {
     return a + b;
 }
 
-// Named arguments supported in calls
+// Bennante Argumente sind in Calls erlaubt
 add(a: 10, b: 20);
 ```
 
-> **Note**: Named arguments must strictly follow the defined parameter order. `add(b: 20, a: 10)` is invalid.
+> **Notiz**: Benannte argumente müssen der definierten Reihenfolge folgen. `add(b: 20, a: 10)` gibt einen Fehler.
 
-#### Const Arguments
-Function arguments can be marked as `const` to enforce read-only semantics. This is a type qualifier, not a manifest constant.
+#### Constante Argumente
+Funktionsargumente können mit `const` markiert werden um read-only zu sein. Dies ist ein Typ Qualifier, keine manifest Konstante.
 
 ```zc
 fn print_val(v: const int) {
-    // v = 10; // Error: Cannot assign to const variable
+    // v = 10; // Fehler: cannot assign to a const variable
     println "{v}";
 }
 ```
