@@ -565,16 +565,16 @@ Zen C supports operator overloading for user-defined structs by implementing spe
 | **Index** | `a[i]` | `get(a, i)` |
 | | `a[i] = v` | `set(a, i, v)` |
 
-> **Note on String Equality**:
-> - `string == string` performs **value comparison** (equivalent to `strcmp`).
-> - `char* == char*` performs **pointer comparison** (checks memory addresses).
-> - Mixed comparisons (e.g. `string == char*`) default to **pointer comparison**.
+> **Notiz in String Gleichheit**:
+> - `string == string` führt **Wertvergleich** aus (equivalent zu `strcmp`).
+> - `char* == char*` führt **Zeigervergleich** aus (prüft Adressen in RAM).
+> - Gemischter Vergleich (z.b. `string == char*`) führt standartmässig **Zeigervergleich** aus.
 
-**Example:**
+**Beispiel:**
 ```zc
-impl Point {
-    fn add(self, other: Point) -> Point {
-        return Point{x: self.x + other.x, y: self.y + other.y};
+impl Punkt {
+    fn add(self, other: Punkt) -> Punkt {
+        return Punkt{x: self.x + other.x, y: self.y + other.y};
     }
 }
 
