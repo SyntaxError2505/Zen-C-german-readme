@@ -492,33 +492,33 @@ match Form {
 }
 ```
 
-#### Reference Binding
-To inspect a value without taking ownership (moving it), use the `ref` keyword in the pattern. This is essential for types that implement Move Semantics (like `Option`, `Result`, non-Copy structs).
+#### Referenzbindung
+Um einen Wert zu inspizieren ohne, dass er dir gehört (ihne ihn zu bewegen), nutzt man das `ref` keyword im Muster. Dies ist essenziel für Typen die Move Semantics (wie `Option` oder `Result`) implementieren.
 
 ```zc
 let opt = Some(NonCopyVal{...});
 match opt {
     Some(ref x) => {
-        // 'x' is a pointer to the value inside 'opt'
-        // 'opt' is NOT moved/consumed here
+        // 'x' ist ein Zeiger zum Wert in 'opt'
+        // 'opt' wird NICHT bewegt/consumiert
         println "{x.field}"; 
     },
     None => {}
 }
 ```
 
-#### Loops
+#### Schleifen
 ```zc
-// Range
-for i in 0..10 { ... }      // Exclusive (0 to 9)
-for i in 0..<10 { ... }     // Exclusive (Explicit)
-for i in 0..=10 { ... }     // Inclusive (0 to 10)
+// Bereich
+for i in 0..10 { ... }      // Exclusiv (0 to 9)
+for i in 0..<10 { ... }     // Exclusiv (Explizit)
+for i in 0..=10 { ... }     // Inclusiv (0 to 10)
 for i in 0..10 step 2 { ... }
 
-// Iterator (Vec or custom Iterable)
+// Iterator (Vec oder custom Iterable)
 for item in vec { ... }
 
-// Iterate over fixed-size arrays directly
+// Iteriere direkt über arrays mit konstanter größer
 let arr: int[5] = [1, 2, 3, 4, 5];
 for val in arr {
     // val is int
@@ -528,29 +528,29 @@ for val in arr {
 // While
 while x < 10 { ... }
 
-// Infinite with label
+// Unendlich mit Label
 outer: loop {
     if done { break outer; }
 }
 
-// Repeat N times
+// wiederhole N mal
 for _ in 0..5 { ... }
 ```
 
-#### Advanced Control
+#### Erweiterte Kontrolle
 ```zc
-// Guard: Execute else and return if condition is false
+// Guard: Führe else un return aus wenn die Kondition falsch ist
 guard ptr != NULL else { return; }
 
-// Unless: If not true
+// Unless: Fals falsch
 unless is_valid { return; }
 ```
 
-### 6. Operators
+### 6. Operatoren
 
-Zen C supports operator overloading for user-defined structs by implementing specific method names.
+Zen C erlaube operator überladung für vom-Nutzer-definierte Structs durch das Implementieren von spezifischen Methodennamen
 
-#### Overloadable Operators
+#### Überladbare Operatoren
 
 | Kategorie | Operator | Methodenname |
 |:---|:---|:---|
@@ -581,13 +581,13 @@ impl Punkt {
 let p3 = p1 + p2; // Calls p1.add(p2)
 ```
 
-#### Syntactic Sugar
+#### Syntaktischer Zucker
 
-These operators are built-in language features and cannot be overloaded directly.
+Diese Operatoren sind built-in Sprachfeatures und können nicht direkt überladen werden.
 
-| Operator | Name | Description |
+| Operator | Name | Beschreibung |
 |:---|:---|:---|
-| `\|>` | Pipeline | `x \|> f(y)` desugars to `f(x, y)` |
+| `\|>` | Pipeline | `x \|> f(y)` wird zu `f(x, y)` |
 | `??` | Null Coalescing | `val ?? default` returns `default` if `val` is NULL (pointers) |
 | `??=` | Null Assignment | `val ??= init` assigns if `val` is NULL |
 | `?.` | Safe Navigation | `ptr?.field` accesses field only if `ptr` is not NULL |
