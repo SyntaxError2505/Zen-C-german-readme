@@ -388,20 +388,20 @@ fn print_val(v: const int) {
 }
 ```
 
-#### Default Arguments
-Functions can define default values for trailing arguments. These can be literals, expressions, or valid Zen C code (like struct constructors).
+#### Standart Argumente
+Funktionen können Standartwerte für Argumente definieren. Diese können literals, expressions oder valider Zen C code (wie struct constructors).
 ```zc
-// Simple default value
+// Simpler Standartwert
 fn increment(val: int, amount: int = 1) -> int {
     return val + amount;
 }
 
-// Expression default value (evaluated at call site)
+// Expression Standartwert (berechnet beim Call)
 fn offset(val: int, pad: int = 10 * 2) -> int {
     return val + pad;
 }
 
-// Struct default value
+// Struct Standartwert
 struct Config { debug: bool; }
 fn init(cfg: Config = Config { debug: true }) {
     if cfg.debug { println "Debug Mode"; }
