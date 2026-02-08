@@ -618,25 +618,25 @@ Zen C erlaubt dir String Literals als Statements zu drucken:
 
 #### String Interpolation (F-strings)
 
-You can embed expressions directly into string literals using `{}` syntax. This works with all printing methods and string shorthands.
+Man kann Expressions direkt in Strings einfügen mit dem `{}` syntax. Dies funktioniert mit allen Druckmethoden und String Shorthands.
 
 ```zc
 let x = 42;
 let name = "Zen";
-println "Value: {x}, Name: {name}";
-"Value: {x}, Name: {name}"; // shorthand println
+println "Wert: {x}, Name: {name}";
+"Wert: {x}, Name: {name}"; // shorthand println
 ```
 
-**Escaping Braces**: Use `{{` to produce a literal `{` and `}}` for a literal `}`:
+**Fliehende Braces**: Nutze `{{` um ein `{` und `}}` um ein `}` zu produzieren:
 
 ```zc
-let json = "JSON: {{\"key\": \"value\"}}";
-// Output: JSON: {"key": "value"}
+let json = "JSON: {{\"schluessel\": \"wert\"}}";
+// Output: JSON: {"schluessel": "wert"}
 ```
 
-#### Input Prompts (`?`)
+#### Nutzer Input (`?`)
 
-Zen C supports a shorthand for prompting user input using the `?` prefix.
+Zen C erlaubt ein Shorthand um den Nutzer mit den `?` prefix nach Input zu fragen.
 
 - `? "Prompt text"`: Prints the prompt (without newline) and waits for input (reads a line).
 - `? "Enter age: " (age)`: Prints prompt and scans input into the variable `age`.
